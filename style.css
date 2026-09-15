@@ -153,6 +153,19 @@ tbody td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:t
 tbody tr:nth-child(even){background:color-mix(in srgb, var(--paper-2) 55%, transparent);}
 .num{font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;}
 .tablewrap{overflow-x:auto; border-radius:8px;}
+.pager{
+  display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:space-between;
+  margin-top:14px; padding-top:12px; border-top:1px solid var(--line);
+}
+.pager-size{display:flex; align-items:center; gap:8px; font-size:.82rem; color:var(--sub);}
+.pager-size select{
+  border:1px solid var(--line); border-radius:7px; padding:5px 8px; background:var(--paper);
+  color:var(--ink); font-family:inherit; font-size:.82rem;
+}
+.pager-nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.pager-info{font-size:.8rem; color:var(--sub); white-space:nowrap;}
+.pager-nav .btn:disabled{opacity:.45; cursor:not-allowed;}
+@media (max-width:480px){.pager{justify-content:flex-start;}}
 .rowactions{display:flex; gap:6px; white-space:nowrap;}
 
 .badge{font-size:.72rem; font-weight:700; padding:2px 9px; border-radius:99px; display:inline-block;}

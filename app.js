@@ -261,12 +261,20 @@ function renderRingkasan(){
 }
 
 // ---------- Finansial ----------
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 function renderFinansial(){
   const rows = sortedFinansial();
-  const body = rows.map((r,i) => {
+  const pageSize = ui.finansialPageSize || 10;
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  if(!ui.finansialPage) ui.finansialPage = 1;
+  if(ui.finansialPage > totalPages) ui.finansialPage = totalPages;
+  const startIdx = (ui.finansialPage - 1) * pageSize;
+  const pageRows = rows.slice(startIdx, startIdx + pageSize);
+
+  const body = pageRows.map((r,i) => {
     const idx = state.finansial.findIndex(x => x.id === r.id);
     return `<tr>
-      <td>${i+1}</td><td>${fmtDate(r.tanggal)}</td><td>${esc(r.jenis)}</td>
+      <td>${startIdx + i + 1}</td><td>${fmtDate(r.tanggal)}</td><td>${esc(r.jenis)}</td>
       <td class="num">${r.tipe==='masuk' ? fmtRp(r.jumlah) : '-'}</td>
       <td class="num">${r.tipe==='keluar' ? fmtRp(r.jumlah) : '-'}</td>
       <td class="num">${fmtRp(r.saldo)}</td>
@@ -274,6 +282,21 @@ function renderFinansial(){
       ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="finansial:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="finansial:${idx}">Hapus</button></td>` : ''}
     </tr>`;
   }).join('');
+
+  const pager = rows.length ? `<div class="pager">
+    <div class="pager-size">
+      <label for="finansial-pagesize">Baris/halaman</label>
+      <select id="finansial-pagesize" data-pagesize="finansial">
+        ${PAGE_SIZE_OPTIONS.map(n => `<option value="${n}" ${pageSize===n?'selected':''}>${n}</option>`).join('')}
+      </select>
+    </div>
+    <div class="pager-nav">
+      <button type="button" class="btn btn-sm" data-page="finansial:prev" ${ui.finansialPage<=1?'disabled':''}>&lsaquo; Sebelumnya</button>
+      <span class="pager-info">Halaman ${ui.finansialPage} dari ${totalPages} &middot; ${rows.length} transaksi</span>
+      <button type="button" class="btn btn-sm" data-page="finansial:next" ${ui.finansialPage>=totalPages?'disabled':''}>Berikutnya &rsaquo;</button>
+    </div>
+  </div>` : '';
+
   return `<div class="section-head"><h2>Finansial</h2>
     ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="finansial">+ Tambah Transaksi</button>` : '<span class="muted">Catatan kapan &amp; bagaimana dana ditransfer</span>'}</div>
   ${formHtml('finansial', [
@@ -283,7 +306,8 @@ function renderFinansial(){
     {name:'jumlah', label:'Nominal (Rp)', type:'number', required:true},
     {name:'metode', label:'Metode / Keterangan', type:'text', placeholder:'mis. Transfer ke DANA via BCA'}
   ])}
-  ${body ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Metode/Ket</th>${session?'<th></th>':''}</tr></thead><tbody>${body}</tbody></table></div>` : '<p class="empty">Belum ada transaksi tercatat.</p>'}`;
+  ${body ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Metode/Ket</th>${session?'<th></th>':''}</tr></thead><tbody>${body}</tbody></table></div>` : '<p class="empty">Belum ada transaksi tercatat.</p>'}
+  ${pager}`;
 }
 
 // ---------- Lampiran ----------
@@ -465,6 +489,23 @@ function attachEvents(){
     btn.addEventListener('click', () => {
       ui.activeTab = btn.getAttribute('data-tab');
       sessionStorage.setItem('jjs_tab', ui.activeTab);
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [section, dir] = btn.getAttribute('data-page').split(':');
+      const key = section + 'Page';
+      ui[key] = (ui[key] || 1) + (dir === 'next' ? 1 : -1);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-pagesize]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const section = sel.getAttribute('data-pagesize');
+      ui[section + 'PageSize'] = parseInt(sel.value, 10);
+      ui[section + 'Page'] = 1;
       render();
     });
   });
