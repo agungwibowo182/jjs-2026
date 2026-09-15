@@ -130,7 +130,9 @@ main.tabpanels{background:var(--paper); border:1px solid var(--line); border-rad
 .muted{color:var(--sub); font-size:.85rem;}
 
 .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px;}
-@media (max-width:720px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stats-3{grid-template-columns:repeat(3,1fr);}
+@media (max-width:720px){.stats{grid-template-columns:repeat(2,1fr);} .stats-3{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:460px){.stats{grid-template-columns:1fr;} .stats-3{grid-template-columns:1fr;}}
 .stat{background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:14px 16px; position:relative;}
 .stat-icon{position:absolute; top:12px; right:12px; width:18px; height:18px; color:var(--line); opacity:.9;}
 .stat .label{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--sub); font-weight:600; padding-right:22px;}

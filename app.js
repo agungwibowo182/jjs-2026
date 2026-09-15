@@ -339,7 +339,7 @@ function renderAnggaran(){
   const notes = state.anggaran.catatan.map((n, idx) => `<li>${esc(n)}${session ? ` <button class="btn btn-sm btn-ghost" data-del="catatan:${idx}">hapus</button>` : ''}</li>`).join('');
   return `<div class="section-head"><h2>Anggaran Biaya</h2>
     ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="anggaran">+ Tambah Item</button>` : '<span class="muted">Rincian budget pengeluaran</span>'}</div>
-  <div class="stats" style="grid-template-columns:repeat(3,1fr);">
+  <div class="stats stats-3">
     <div class="stat"><div class="label">Target Iuran / Orang</div><div class="value">${fmtRp(targetPerOrang())}</div>
       ${session ? `<button class="btn btn-sm btn-ghost" style="margin-top:6px;" data-toggle-form="target">Ubah target</button>` : ''}</div>
     <div class="stat"><div class="label">Grand Total Anggaran</div><div class="value">${fmtRp(total)}</div></div>
