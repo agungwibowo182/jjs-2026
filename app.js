@@ -153,24 +153,8 @@ function panel(key, fn){
   return `<section class="panel ${ui.activeTab===key?'show':''}" data-panel="${key}">${fn()}</section>`;
 }
 
-function heroSky(){
-  const stars = [
-    [70,34],[140,70],[210,28],[300,55],[380,20],[460,60],[540,32],[630,72],
-    [710,24],[800,50],[900,68],[960,30],[1030,58],[1110,26],[1160,64],
-    [40,90],[260,95],[520,88],[780,92],[1050,94]
-  ].map(([x,y],i) => `<circle class="hero-star" cx="${x}" cy="${y}" r="${1 + (i%3)*0.5}"/>`).join('');
-  return `<svg viewBox="0 0 1200 400" preserveAspectRatio="none" aria-hidden="true">
-    <circle cx="1080" cy="66" r="40" fill="#F3E7C9" opacity=".18"/>
-    <circle cx="1080" cy="66" r="24" fill="#F6EFD8"/>
-    ${stars}
-    <polygon points="0,260 100,210 220,250 340,190 480,240 600,200 740,250 860,205 1000,245 1120,200 1200,230 1200,400 0,400" fill="#3E6B52" opacity=".5"/>
-    <polygon points="0,300 150,240 280,285 420,225 560,280 700,230 840,290 980,235 1120,285 1200,255 1200,400 0,400" fill="#20402F" opacity=".78"/>
-    <polygon points="0,340 120,270 260,330 380,260 520,325 660,255 800,330 940,265 1080,335 1200,290 1200,400 0,400" fill="#101C16"/>
-  </svg>`;
-}
 function renderHero(){
   return `<header class="hero">
-    <div class="hero-sky">${heroSky()}</div>
     <div class="hero-content">
       <div class="hero-top">
         <div>
