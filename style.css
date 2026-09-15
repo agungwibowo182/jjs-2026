@@ -49,8 +49,14 @@ button{font-family:inherit;}
 @keyframes hero-rise{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
 @media (prefers-reduced-motion:reduce){.hero-content{animation:none;}}
 .hero-top{display:flex; flex-wrap:wrap; gap:16px 24px; justify-content:space-between; align-items:flex-start;}
-.hero h1{font-size:clamp(1.6rem,4.4vw,2.4rem); color:#FBFAF4; font-weight:700;}
-.tagline{font-family:'Fraunces',serif; font-style:italic; color:#E7C486; font-size:1.05rem; margin-top:2px;}
+.hero h1{
+  font-size:clamp(1.6rem,4.4vw,2.4rem); color:#FBFAF4; font-weight:700;
+  text-shadow:0 2px 16px rgba(0,0,0,.55), 0 1px 4px rgba(0,0,0,.65);
+}
+.tagline{
+  font-family:'Fraunces',serif; font-style:italic; color:#F3D9A0; font-size:1.05rem; margin-top:2px;
+  text-shadow:0 1px 10px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.7);
+}
 .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
 .chip{
   font-size:.78rem; padding:4px 10px; border-radius:99px; border:1px solid rgba(251,250,244,.28);
