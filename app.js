@@ -425,7 +425,18 @@ function renderGaleri(){
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 function renderFinansial(){
-  const rows = sortedFinansial();
+  const allRows = sortedFinansial();
+  const typeFilter = ui.finansialTypeFilter || 'semua';
+  const searchText = (ui.finansialFilter || '').trim().toLowerCase();
+  const typeCounts = {
+    semua: allRows.length,
+    masuk: allRows.filter(r => r.tipe !== 'keluar').length,
+    keluar: allRows.filter(r => r.tipe === 'keluar').length
+  };
+  let rows = allRows;
+  if(typeFilter !== 'semua') rows = rows.filter(r => (typeFilter === 'keluar' ? r.tipe === 'keluar' : r.tipe !== 'keluar'));
+  if(searchText) rows = rows.filter(r => (r.jenis||'').toLowerCase().includes(searchText) || (r.metode||'').toLowerCase().includes(searchText));
+  const filteredTotal = rows.reduce((a,r) => a + Number(r.jumlah||0), 0);
   const pageSize = ui.finansialPageSize || 10;
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   if(!ui.finansialPage) ui.finansialPage = 1;
@@ -459,6 +470,10 @@ function renderFinansial(){
     </div>
   </div>` : '';
 
+  const TYPE_LABELS = { semua: 'Semua', masuk: 'Uang Masuk', keluar: 'Uang Keluar' };
+  const typeChips = ['semua','masuk','keluar'].map(key => `<button type="button" class="filter-chip ${typeFilter===key?'active':''}" data-finansial-type-filter="${key}">${TYPE_LABELS[key]} (${typeCounts[key]})</button>`).join('');
+  const filterSummary = (typeFilter !== 'semua' || searchText) ? `<p class="muted" style="margin:4px 0 12px;">${rows.length} transaksi cocok &middot; total ${fmtRp(filteredTotal)}</p>` : '';
+
   return `<div class="section-head"><h2>Finansial</h2>
     ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="finansial">+ Tambah Transaksi</button>` : '<span class="muted">Catatan kapan &amp; bagaimana dana ditransfer</span>'}</div>
   ${formHtml('finansial', [
@@ -468,7 +483,13 @@ function renderFinansial(){
     {name:'jumlah', label:'Nominal (Rp)', type:'number', required:true},
     {name:'metode', label:'Metode / Keterangan', type:'text', placeholder:'mis. Transfer ke DANA via BCA'}
   ])}
-  ${body ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Metode/Ket</th>${session?'<th></th>':''}</tr></thead><tbody>${body}</tbody></table></div>` : '<p class="empty">Belum ada transaksi tercatat.</p>'}
+  <div class="status-filter">${typeChips}</div>
+  <div class="search-box">
+    <input type="search" id="finansial-filter" placeholder="Cari jenis atau metode/keterangan..." value="${esc(ui.finansialFilter || '')}">
+    ${searchText ? `<button type="button" class="btn btn-sm btn-ghost" data-action="clear-finansial-filter">Bersihkan</button>` : ''}
+  </div>
+  ${filterSummary}
+  ${body ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Metode/Ket</th>${session?'<th></th>':''}</tr></thead><tbody>${body}</tbody></table></div>` : (allRows.length === 0 ? '<p class="empty">Belum ada transaksi tercatat.</p>' : '<p class="empty">Tidak ada transaksi yang cocok dengan filter ini.</p>')}
   ${pager}`;
 }
 
@@ -784,6 +805,18 @@ function attachEvents(){
   if(clearFilterBtn) clearFilterBtn.addEventListener('click', () => { ui.pesertaFilter = ''; render(); });
   document.querySelectorAll('[data-status-filter]').forEach(btn => {
     btn.addEventListener('click', () => { ui.pesertaStatusFilter = btn.getAttribute('data-status-filter'); render(); });
+  });
+
+  const finansialFilter = document.getElementById('finansial-filter');
+  if(finansialFilter) finansialFilter.addEventListener('input', () => {
+    ui.finansialFilter = finansialFilter.value;
+    ui.finansialPage = 1;
+    render();
+  });
+  const clearFinansialFilterBtn = document.querySelector('[data-action="clear-finansial-filter"]');
+  if(clearFinansialFilterBtn) clearFinansialFilterBtn.addEventListener('click', () => { ui.finansialFilter = ''; ui.finansialPage = 1; render(); });
+  document.querySelectorAll('[data-finansial-type-filter]').forEach(btn => {
+    btn.addEventListener('click', () => { ui.finansialTypeFilter = btn.getAttribute('data-finansial-type-filter'); ui.finansialPage = 1; render(); });
   });
 
   const feedbackNama = document.getElementById('feedback-nama');
