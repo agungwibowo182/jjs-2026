@@ -275,7 +275,9 @@ const ICONS = {
   trendUp: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 16 9 10 13 14 21 6"/><polyline points="15 6 21 6 21 12"/></svg>',
   trendDown: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 9 14 13 10 21 18"/><polyline points="21 12 21 18 15 18"/></svg>',
   users: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 8.2a3 3 0 1 1 0 6"/><path d="M21.5 20c0-2.8-2-5.1-4.7-5.8"/></svg>',
-  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>'
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
+  outflow: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>',
+  scale: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7 2.5 13a2.5 2.5 0 0 0 5 0Z"/><path d="M19 7l-2.5 6a2.5 2.5 0 0 0 5 0Z"/></svg>'
 };
 
 const PAYMENT_INFO = {
@@ -302,7 +304,8 @@ function renderPayCard(){
 }
 
 function renderRingkasan(){
-  const masuk = totalMasuk(), keb = anggaranTotal(), sisa = keb - masuk, target = targetPerOrang();
+  const masuk = totalMasuk(), keluar = totalKeluar(), saldoKas = masuk - keluar;
+  const keb = anggaranTotal(), sisa = keb - masuk, target = targetPerOrang();
   const pct = keb > 0 ? Math.min(100, Math.round(masuk/keb*100)) : 0;
   const recent = sortedFinansial().slice(-5).reverse();
   const filterText = (ui.pesertaFilter || '').trim().toLowerCase();
@@ -321,14 +324,16 @@ function renderRingkasan(){
   }).join('');
 
   return `<div class="section-head"><h2>Ringkasan</h2><span class="muted">Target iuran: ${fmtRp(target)}/orang</span></div>
-  <div class="stats">
-    <div class="stat">${ICONS.wallet}<div class="label">Total Terkumpul</div><div class="value good">${fmtRp(masuk)}</div></div>
+  <div class="stats stats-3">
+    <div class="stat">${ICONS.wallet}<div class="label">Total Dana Masuk</div><div class="value good">${fmtRp(masuk)}</div></div>
+    <div class="stat">${ICONS.outflow}<div class="label">Total Dana Keluar</div><div class="value bad">${fmtRp(keluar)}</div></div>
+    <div class="stat">${ICONS.scale}<div class="label">Saldo Kas Saat Ini</div><div class="value ${saldoKas>=0?'good':'bad'}">${fmtRp(saldoKas)}</div></div>
     <div class="stat">${ICONS.target}<div class="label">Kebutuhan Anggaran</div><div class="value">${fmtRp(keb)}</div></div>
     <div class="stat">${sisa>0?ICONS.trendDown:ICONS.trendUp}<div class="label">${sisa>0?'Masih Kurang':'Surplus'}</div><div class="value ${sisa>0?'bad':'good'}">${fmtRp(Math.abs(sisa))}</div></div>
     <div class="stat">${ICONS.users}<div class="label">Peserta Terdaftar</div><div class="value">${state.peserta.length} orang</div></div>
   </div>
   <div class="progress"><i style="width:${pct}%"></i></div>
-  <p class="muted" style="margin-top:6px;">${pct}% dari kebutuhan anggaran sudah terkumpul.</p>
+  <p class="muted" style="margin-top:6px;">${pct}% dari kebutuhan anggaran sudah terkumpul &middot; saldo kas di atas sudah memperhitungkan dana yang telah dikeluarkan.</p>
 
   ${renderPayCard()}
 
