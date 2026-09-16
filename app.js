@@ -130,6 +130,10 @@ function render(){
     root.innerHTML = `<div class="wrap"><p class="loading">Memuat data...</p></div>`;
     return;
   }
+  const active = document.activeElement;
+  const focusId = (active && active.id) ? active.id : null;
+  const selStart = (active && typeof active.selectionStart === 'number') ? active.selectionStart : null;
+  const selEnd = (active && typeof active.selectionEnd === 'number') ? active.selectionEnd : null;
   root.innerHTML = `
     <div class="wrap">
       ${renderHero()}
@@ -150,6 +154,13 @@ function render(){
   `;
   attachEvents();
   updateCountdown();
+  if(focusId){
+    const el = document.getElementById(focusId);
+    if(el && typeof el.focus === 'function'){
+      el.focus();
+      if(selStart !== null && el.setSelectionRange){ try{ el.setSelectionRange(selStart, selEnd); }catch(e){} }
+    }
+  }
 }
 function panel(key, fn){
   return `<section class="panel ${ui.activeTab===key?'show':''}" data-panel="${key}">${fn()}</section>`;
@@ -267,13 +278,18 @@ function renderRingkasan(){
   const masuk = totalMasuk(), keb = anggaranTotal(), sisa = keb - masuk, target = targetPerOrang();
   const pct = keb > 0 ? Math.min(100, Math.round(masuk/keb*100)) : 0;
   const recent = sortedFinansial().slice(-5).reverse();
-  const pesertaRows = state.peserta.map((p,i) => {
+  const filterText = (ui.pesertaFilter || '').trim().toLowerCase();
+  const visiblePeserta = filterText
+    ? state.peserta.filter(p => p.nama.toLowerCase().includes(filterText))
+    : state.peserta;
+  const pesertaRows = visiblePeserta.map((p) => {
+    const idx = state.peserta.indexOf(p);
     const status = p.dibayar >= target ? 'good' : (p.dibayar > 0 ? 'warn' : 'bad');
     const label = p.dibayar >= target ? 'Lunas' : (p.dibayar > 0 ? 'Kurang ' + fmtRp(target-p.dibayar) : 'Belum bayar');
     return `<tr>
-      <td>${i+1}</td><td>${esc(p.nama)}</td><td class="num">${fmtRp(p.dibayar)}</td>
+      <td>${idx+1}</td><td>${esc(p.nama)}</td><td class="num">${fmtRp(p.dibayar)}</td>
       <td><span class="badge ${status}">${label}</span></td>
-      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="peserta:${i}">Ubah</button><button class="btn btn-sm btn-danger" data-del="peserta:${i}">Hapus</button></td>` : ''}
+      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="peserta:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="peserta:${idx}">Hapus</button></td>` : ''}
     </tr>`;
   }).join('');
 
@@ -291,11 +307,16 @@ function renderRingkasan(){
 
   <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Status Iuran Peserta</h2>
     ${session ? `<button class="btn btn-sm" data-toggle-form="peserta">+ Tambah Peserta</button>` : ''}</div>
+  <div class="search-box">
+    <input type="search" id="peserta-filter" placeholder="Cari nama peserta..." value="${esc(ui.pesertaFilter || '')}">
+    ${filterText ? `<button type="button" class="btn btn-sm btn-ghost" data-action="clear-peserta-filter">Bersihkan</button>` : ''}
+  </div>
   ${formHtml('peserta', [
     {name:'nama', label:'Nama', type:'text', required:true},
     {name:'dibayar', label:'Sudah Dibayar (Rp)', type:'number', required:true}
   ])}
-  ${pesertaRows ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Nama</th><th>Dibayar</th><th>Status</th>${session?'<th></th>':''}</tr></thead><tbody>${pesertaRows}</tbody></table></div>` : '<p class="empty">Belum ada peserta.</p>'}
+  ${pesertaRows ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Nama</th><th>Dibayar</th><th>Status</th>${session?'<th></th>':''}</tr></thead><tbody>${pesertaRows}</tbody></table></div>`
+    : (filterText ? `<p class="empty">Tidak ada peserta bernama "${esc(ui.pesertaFilter)}".</p>` : '<p class="empty">Belum ada peserta.</p>')}
 
   <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Transaksi Terakhir</h2></div>
   ${recent.length ? `<div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Nominal</th></tr></thead><tbody>${
@@ -668,6 +689,14 @@ function attachEvents(){
       render();
     });
   });
+
+  const pesertaFilter = document.getElementById('peserta-filter');
+  if(pesertaFilter) pesertaFilter.addEventListener('input', () => {
+    ui.pesertaFilter = pesertaFilter.value;
+    render();
+  });
+  const clearFilterBtn = document.querySelector('[data-action="clear-peserta-filter"]');
+  if(clearFilterBtn) clearFilterBtn.addEventListener('click', () => { ui.pesertaFilter = ''; render(); });
 
   document.querySelectorAll('[data-copy-text]').forEach(btn => {
     btn.addEventListener('click', async () => {

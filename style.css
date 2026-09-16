@@ -132,6 +132,13 @@ main.tabpanels{background:var(--paper); border:1px solid var(--line); border-rad
 .section-head h2{font-size:1.3rem; color:var(--forest);}
 .muted{color:var(--sub); font-size:.85rem;}
 
+.search-box{display:flex; align-items:center; gap:8px; margin-bottom:12px;}
+.search-box input{
+  flex:1; max-width:320px; border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+  background:var(--paper); color:var(--ink); font-family:inherit; font-size:.88rem;
+}
+.search-box input:focus-visible{outline:2px solid var(--moss); outline-offset:1px;}
+
 .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px;}
 .stats-3{grid-template-columns:repeat(3,1fr);}
 @media (max-width:720px){.stats{grid-template-columns:repeat(2,1fr);} .stats-3{grid-template-columns:repeat(2,1fr);}}
