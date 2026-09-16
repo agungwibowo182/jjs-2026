@@ -60,6 +60,7 @@ function toast(msg){
 
 const TABS = [
   {key:'ringkasan', label:'Ringkasan'},
+  {key:'galeri', label:'Galeri'},
   {key:'finansial', label:'Finansial'},
   {key:'lampiran', label:'Lampiran Finansial'},
   {key:'anggaran', label:'Anggaran Biaya'},
@@ -135,6 +136,7 @@ function render(){
       <nav class="tabs">${TABS.map(t => `<button class="tabbtn ${ui.activeTab===t.key?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('')}</nav>
       <main class="tabpanels">
         ${panel('ringkasan', renderRingkasan)}
+        ${panel('galeri', renderGaleri)}
         ${panel('finansial', renderFinansial)}
         ${panel('lampiran', renderLampiran)}
         ${panel('anggaran', renderAnggaran)}
@@ -261,6 +263,34 @@ function renderRingkasan(){
 }
 
 // ---------- Finansial ----------
+// ---------- Galeri ----------
+const GALERI_PHOTOS = [
+  {file:'demang1.jpg', caption:'Villa Demang Puncak'},
+  {file:'Livingroom.jpg', caption:'Ruang Keluarga'},
+  {file:'Kamar_tidur.jpg', caption:'Kamar Tidur'},
+  {file:'Kamar_Mandi.jpg', caption:'Kamar Mandi'},
+  {file:'Kitchen_Set.jpg', caption:'Dapur / Kitchen Set'},
+  {file:'Entertainment_area.jpg', caption:'Ruang Hiburan'},
+  {file:'chill_Area.jpg', caption:'Area Santai'},
+  {file:'Barak_Area.jpg', caption:'Area Barak'},
+  {file:'gazebo.jpg', caption:'Gazebo'},
+  {file:'api_unggun.jpg', caption:'Area Api Unggun'},
+  {file:'private_pool.jpg', caption:'Kolam Renang Pribadi'},
+  {file:'lapangan.jpg', caption:'Lapangan'},
+  {file:'halaman.jpg', caption:'Halaman'}
+];
+function renderGaleri(){
+  const cards = GALERI_PHOTOS.map(p => {
+    const src = 'galley/' + p.file;
+    return `<div class="card-photo">
+      <img src="${src}" data-zoom-src="${src}" alt="${esc(p.caption)}" loading="lazy">
+      <div class="meta"><div class="t">${esc(p.caption)}</div></div>
+    </div>`;
+  }).join('');
+  return `<div class="section-head"><h2>Galeri</h2><span class="muted">Fasilitas Villa Demang Puncak</span></div>
+  <div class="gallery">${cards}</div>`;
+}
+
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 function renderFinansial(){
   const rows = sortedFinansial();
@@ -313,7 +343,7 @@ function renderFinansial(){
 // ---------- Lampiran ----------
 function renderLampiran(){
   const cards = state.lampiran.map((l, idx) => `<div class="card-photo">
-    <img src="${l.url}" data-zoom="${idx}" alt="${esc(l.judul)}">
+    <img src="${l.url}" data-zoom-src="${l.url}" alt="${esc(l.judul)}">
     <div class="meta"><div class="t">${esc(l.judul)}</div><div class="d">${fmtDate(l.tanggal)}</div>
     ${l.keterangan ? `<div class="k">${esc(l.keterangan)}</div>` : ''}</div>
     ${session ? `<div class="actions"><button class="btn btn-sm btn-danger" data-del="lampiran:${idx}">Hapus</button></div>` : ''}
@@ -569,8 +599,8 @@ function attachEvents(){
     });
   });
 
-  document.querySelectorAll('[data-zoom]').forEach(img => {
-    img.addEventListener('click', () => { ui.lightbox = state.lampiran[parseInt(img.getAttribute('data-zoom'),10)].url; render(); });
+  document.querySelectorAll('[data-zoom-src]').forEach(img => {
+    img.addEventListener('click', () => { ui.lightbox = img.getAttribute('data-zoom-src'); render(); });
   });
   const closeLb = document.querySelector('[data-close-lightbox]');
   if(closeLb) closeLb.addEventListener('click', () => { ui.lightbox = null; render(); });
