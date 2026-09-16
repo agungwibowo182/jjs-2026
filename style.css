@@ -238,6 +238,25 @@ form.inlineform textarea{resize:vertical; min-height:38px;}
 .notecard h3{font-size:.92rem; color:var(--forest); margin-bottom:8px;}
 .notecard ol{margin:0; padding-left:18px; font-size:.85rem; color:var(--sub); display:flex; flex-direction:column; gap:6px;}
 
+.paycard{
+  background:var(--paper-2); border:1px solid var(--clay); border-radius:12px; padding:16px 18px;
+  margin-top:22px; box-shadow:var(--shadow);
+}
+.paycard h3{font-size:.98rem; color:var(--clay); margin-bottom:12px;}
+.pay-grid{display:flex; flex-direction:column; gap:8px;}
+.pay-row{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+}
+.pay-bank{font-size:.78rem; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.03em; min-width:92px;}
+.pay-num{font-size:.95rem; font-weight:600; flex:1;}
+.pay-copy{display:flex; align-items:center; gap:5px; white-space:nowrap;}
+.pay-name{margin:12px 0 0; font-size:.85rem; color:var(--sub);}
+.pay-name strong{color:var(--ink);}
+@media (max-width:480px){
+  .pay-bank{min-width:100%; order:-1;}
+}
+
 .toast{
   position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--forest); color:var(--paper-2);
   padding:10px 18px; border-radius:8px; font-size:.85rem; box-shadow:var(--shadow); z-index:60; max-width:90vw;

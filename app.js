@@ -236,8 +236,32 @@ const ICONS = {
   target: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor" stroke="none"/></svg>',
   trendUp: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 16 9 10 13 14 21 6"/><polyline points="15 6 21 6 21 12"/></svg>',
   trendDown: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 9 14 13 10 21 18"/><polyline points="21 12 21 18 15 18"/></svg>',
-  users: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 8.2a3 3 0 1 1 0 6"/><path d="M21.5 20c0-2.8-2-5.1-4.7-5.8"/></svg>'
+  users: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 8.2a3 3 0 1 1 0 6"/><path d="M21.5 20c0-2.8-2-5.1-4.7-5.8"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>'
 };
+
+const PAYMENT_INFO = {
+  nama: 'SRI LAELA WULAN SARI NENGSIH',
+  rekening: [
+    {bank:'VA BCA', nomor:'3901-085881677897'},
+    {bank:'VA MANDIRI', nomor:'89508-085881677897'},
+    {bank:'VA BRI', nomor:'88810-085881677897'},
+    {bank:'VA BNI', nomor:'8881-085881677897'},
+    {bank:'VA CIMB', nomor:'8059-085881677897'}
+  ]
+};
+function renderPayCard(){
+  const rows = PAYMENT_INFO.rekening.map(r => `<div class="pay-row">
+    <span class="pay-bank">${esc(r.bank)}</span>
+    <span class="pay-num mono">${esc(r.nomor)}</span>
+    <button type="button" class="btn btn-sm btn-ghost pay-copy" data-copy-text="${esc(r.nomor)}" title="Salin nomor">${ICONS.copy} Salin</button>
+  </div>`).join('');
+  return `<div class="paycard">
+    <h3>Cicilan via Transfer ke DANA</h3>
+    <div class="pay-grid">${rows}</div>
+    <p class="pay-name">a.n. <strong>${esc(PAYMENT_INFO.nama)}</strong></p>
+  </div>`;
+}
 
 function renderRingkasan(){
   const masuk = totalMasuk(), keb = anggaranTotal(), sisa = keb - masuk, target = targetPerOrang();
@@ -262,6 +286,8 @@ function renderRingkasan(){
   </div>
   <div class="progress"><i style="width:${pct}%"></i></div>
   <p class="muted" style="margin-top:6px;">${pct}% dari kebutuhan anggaran sudah terkumpul.</p>
+
+  ${renderPayCard()}
 
   <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Status Iuran Peserta</h2>
     ${session ? `<button class="btn btn-sm" data-toggle-form="peserta">+ Tambah Peserta</button>` : ''}</div>
@@ -640,6 +666,18 @@ function attachEvents(){
       const dir = parseInt(btn.getAttribute('data-lb-nav'), 10);
       ui.lightboxIndex = (ui.lightboxIndex + dir + total) % total;
       render();
+    });
+  });
+
+  document.querySelectorAll('[data-copy-text]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.getAttribute('data-copy-text');
+      try{
+        await navigator.clipboard.writeText(text);
+        toast('Nomor disalin: ' + text);
+      }catch(e){
+        toast('Gagal menyalin otomatis, salin manual: ' + text);
+      }
     });
   });
 }
