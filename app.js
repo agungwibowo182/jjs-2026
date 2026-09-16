@@ -558,7 +558,7 @@ function renderKritikSaran(){
 
   return `<div class="section-head"><h2>Kritik &amp; Saran</h2><span class="muted">Boleh diisi siapa saja, nama opsional</span></div>
   <form class="inlineform" id="feedback-form">
-    <div><label>Nama (opsional)</label><input type="text" id="feedback-nama" name="nama" value="${esc(ui.feedbackDraft.nama)}" placeholder="mis. Rara, atau kosongkan" maxlength="60"></div>
+    <div><label>Nama (opsional)</label><input type="text" id="feedback-nama" name="nama" value="${esc(ui.feedbackDraft.nama)}" placeholder="Nama" maxlength="60"></div>
     <div class="full"><label>Kritik / Saran</label><textarea id="feedback-pesan" name="pesan" required maxlength="2000" placeholder="Tulis kritik atau saran Anda di sini...">${esc(ui.feedbackDraft.pesan)}</textarea></div>
     <div class="formbar"><button type="submit" class="btn btn-primary btn-sm">Kirim</button></div>
   </form>
