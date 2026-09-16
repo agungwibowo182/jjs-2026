@@ -32,7 +32,7 @@ const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov
 let state = null;
 let session = null;
 let loadError = null;
-const ui = { activeTab: sessionStorage.getItem('jjs_tab') || 'ringkasan', loginOpen: false, forms: {}, lightbox: null, busy: false };
+const ui = { activeTab: sessionStorage.getItem('jjs_tab') || 'ringkasan', loginOpen: false, forms: {}, lightboxImages: null, lightboxIndex: 0, busy: false };
 
 function fmtRp(n){
   n = Math.round(Number(n) || 0);
@@ -145,7 +145,7 @@ function render(){
       </main>
     </div>
     <footer class="hint">Jalan-Jalan Saans 2026 &middot; ${session ? 'Mode admin aktif — perubahan tersimpan untuk semua orang.' : 'Mode lihat &mdash; hanya seksi keuangan yang bisa mengubah data.'}</footer>
-    ${ui.lightbox ? `<div class="lightbox" id="lightbox"><button class="close" data-close-lightbox>&times;</button><img src="${ui.lightbox}"></div>` : ''}
+    ${renderLightbox()}
     <div id="toast" class="toast" hidden></div>
   `;
   attachEvents();
@@ -153,6 +153,21 @@ function render(){
 }
 function panel(key, fn){
   return `<section class="panel ${ui.activeTab===key?'show':''}" data-panel="${key}">${fn()}</section>`;
+}
+function renderLightbox(){
+  if(!ui.lightboxImages || !ui.lightboxImages.length) return '';
+  const total = ui.lightboxImages.length;
+  const cur = ui.lightboxImages[ui.lightboxIndex];
+  return `<div class="lightbox" id="lightbox">
+    <button class="close" data-close-lightbox>&times;</button>
+    ${total > 1 ? `<button class="lb-nav lb-prev" data-lb-nav="-1" aria-label="Sebelumnya">&lsaquo;</button>` : ''}
+    <figure class="lb-figure">
+      <img src="${cur.src}" alt="${esc(cur.alt||'')}">
+      ${cur.alt ? `<figcaption>${esc(cur.alt)}</figcaption>` : ''}
+    </figure>
+    ${total > 1 ? `<button class="lb-nav lb-next" data-lb-nav="1" aria-label="Berikutnya">&rsaquo;</button>` : ''}
+    ${total > 1 ? `<div class="lb-counter">${ui.lightboxIndex+1} / ${total}</div>` : ''}
+  </div>`;
 }
 
 function renderHero(){
@@ -600,12 +615,26 @@ function attachEvents(){
   });
 
   document.querySelectorAll('[data-zoom-src]').forEach(img => {
-    img.addEventListener('click', () => { ui.lightbox = img.getAttribute('data-zoom-src'); render(); });
+    img.addEventListener('click', () => {
+      const gallery = img.closest('.gallery');
+      const siblings = gallery ? Array.from(gallery.querySelectorAll('[data-zoom-src]')) : [img];
+      ui.lightboxImages = siblings.map(el => ({ src: el.getAttribute('data-zoom-src'), alt: el.getAttribute('alt') }));
+      ui.lightboxIndex = siblings.indexOf(img);
+      render();
+    });
   });
   const closeLb = document.querySelector('[data-close-lightbox]');
-  if(closeLb) closeLb.addEventListener('click', () => { ui.lightbox = null; render(); });
+  if(closeLb) closeLb.addEventListener('click', () => { ui.lightboxImages = null; render(); });
   const lb = document.getElementById('lightbox');
-  if(lb) lb.addEventListener('click', e => { if(e.target === lb){ ui.lightbox = null; render(); } });
+  if(lb) lb.addEventListener('click', e => { if(e.target === lb){ ui.lightboxImages = null; render(); } });
+  document.querySelectorAll('[data-lb-nav]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const total = ui.lightboxImages.length;
+      const dir = parseInt(btn.getAttribute('data-lb-nav'), 10);
+      ui.lightboxIndex = (ui.lightboxIndex + dir + total) % total;
+      render();
+    });
+  });
 }
 
 function defaultsFor(section){
@@ -672,6 +701,13 @@ function finalizeSubmit(section, data, editIndex){
     closeForm(section);
   });
 }
+
+document.addEventListener('keydown', e => {
+  if(!ui.lightboxImages) return;
+  if(e.key === 'Escape'){ ui.lightboxImages = null; render(); }
+  else if(e.key === 'ArrowLeft'){ ui.lightboxIndex = (ui.lightboxIndex - 1 + ui.lightboxImages.length) % ui.lightboxImages.length; render(); }
+  else if(e.key === 'ArrowRight'){ ui.lightboxIndex = (ui.lightboxIndex + 1) % ui.lightboxImages.length; render(); }
+});
 
 setInterval(updateCountdown, 1000);
 
