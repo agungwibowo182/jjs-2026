@@ -303,6 +303,13 @@ function renderGaleri(){
     </div>`;
   }).join('');
   return `<div class="section-head"><h2>Galeri</h2><span class="muted">Fasilitas Villa Demang Puncak</span></div>
+  <div class="video-feature">
+    <video controls playsinline preload="metadata" poster="galley/villa_demang_poster.jpg">
+      <source src="galley/villa_demang_video.mp4" type="video/mp4">
+      Browser Anda tidak mendukung pemutaran video.
+    </video>
+    <p class="cap">Cuplikan suasana Villa Demang &mdash; kredit @puncakmediabogor</p>
+  </div>
   <div class="gallery">${cards}</div>`;
 }
 
