@@ -111,6 +111,22 @@ async function boot(){
       render();
     })
     .subscribe();
+
+  const presenceKey = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const presenceChannel = supabase.channel('site-presence', { config: { presence: { key: presenceKey } } });
+  presenceChannel.on('presence', { event: 'sync' }, () => {
+    onlineCount = Object.keys(presenceChannel.presenceState()).length;
+    updateOnlineBadge();
+  });
+  presenceChannel.subscribe(async status => {
+    if(status === 'SUBSCRIBED') await presenceChannel.track({ online_at: Date.now() });
+  });
+}
+
+let onlineCount = 1;
+function updateOnlineBadge(){
+  const el = document.getElementById('online-count');
+  if(el) el.textContent = onlineCount + ' orang online';
 }
 
 // ---------- persistence ----------
@@ -218,6 +234,7 @@ function renderHero(){
           <div class="chips">
             <span class="chip">${esc(state.susunan.tanggal)}</span>
             <span class="chip">${esc(state.susunan.tempat)}</span>
+            <span class="chip online-chip"><span class="online-dot"></span><span id="online-count">${onlineCount} orang online</span></span>
           </div>
         </div>
         <div class="adminzone">

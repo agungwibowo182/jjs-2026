@@ -62,6 +62,17 @@ button{font-family:inherit;}
   font-size:.78rem; padding:4px 10px; border-radius:99px; border:1px solid rgba(251,250,244,.28);
   background:rgba(251,250,244,.12); color:#FBFAF4; white-space:nowrap; backdrop-filter:blur(6px);
 }
+.online-chip{display:inline-flex; align-items:center; gap:6px;}
+.online-dot{
+  width:8px; height:8px; border-radius:50%; background:#6FBE8B; flex:none;
+  box-shadow:0 0 0 0 rgba(111,190,139,.6); animation:online-pulse 2s ease-out infinite;
+}
+@keyframes online-pulse{
+  0%{box-shadow:0 0 0 0 rgba(111,190,139,.55);}
+  70%{box-shadow:0 0 0 6px rgba(111,190,139,0);}
+  100%{box-shadow:0 0 0 0 rgba(111,190,139,0);}
+}
+@media (prefers-reduced-motion:reduce){.online-dot{animation:none;}}
 .adminzone{display:flex; flex-direction:column; align-items:flex-end; gap:6px;}
 .btn-on-dark{
   background:rgba(251,250,244,.14); border-color:rgba(251,250,244,.35); color:#FBFAF4; backdrop-filter:blur(6px);
