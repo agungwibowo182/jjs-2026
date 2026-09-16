@@ -145,6 +145,7 @@ main.tabpanels{background:var(--paper); border:1px solid var(--line); border-rad
 
 .section-head{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
 .section-head h2{font-size:1.3rem; color:var(--forest);}
+.section-head-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
 .muted{color:var(--sub); font-size:.85rem;}
 
 .status-filter{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}

@@ -160,6 +160,21 @@ function sortedFinansial(){
   let run = 0;
   return arr.map(r => { run += (r.tipe==='keluar' ? -Number(r.jumlah||0) : Number(r.jumlah||0)); return Object.assign({}, r, {saldo: run}); });
 }
+function filteredFinansialRows(){
+  const allRows = sortedFinansial();
+  const typeFilter = ui.finansialTypeFilter || 'semua';
+  const searchText = (ui.finansialFilter || '').trim().toLowerCase();
+  const typeCounts = {
+    semua: allRows.length,
+    masuk: allRows.filter(r => r.tipe !== 'keluar').length,
+    keluar: allRows.filter(r => r.tipe === 'keluar').length
+  };
+  let rows = allRows;
+  if(typeFilter !== 'semua') rows = rows.filter(r => (typeFilter === 'keluar' ? r.tipe === 'keluar' : r.tipe !== 'keluar'));
+  if(searchText) rows = rows.filter(r => (r.jenis||'').toLowerCase().includes(searchText) || (r.metode||'').toLowerCase().includes(searchText));
+  const filteredTotal = rows.reduce((a,r) => a + Number(r.jumlah||0), 0);
+  return { allRows, rows, typeFilter, searchText, typeCounts, filteredTotal };
+}
 
 // ---------- render ----------
 function render(){
@@ -293,6 +308,7 @@ const ICONS = {
   trendDown: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 9 14 13 10 21 18"/><polyline points="21 12 21 18 15 18"/></svg>',
   users: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 8.2a3 3 0 1 1 0 6"/><path d="M21.5 20c0-2.8-2-5.1-4.7-5.8"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg>',
   outflow: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>',
   scale: '<svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7 2.5 13a2.5 2.5 0 0 0 5 0Z"/><path d="M19 7l-2.5 6a2.5 2.5 0 0 0 5 0Z"/></svg>'
 };
@@ -425,18 +441,7 @@ function renderGaleri(){
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 function renderFinansial(){
-  const allRows = sortedFinansial();
-  const typeFilter = ui.finansialTypeFilter || 'semua';
-  const searchText = (ui.finansialFilter || '').trim().toLowerCase();
-  const typeCounts = {
-    semua: allRows.length,
-    masuk: allRows.filter(r => r.tipe !== 'keluar').length,
-    keluar: allRows.filter(r => r.tipe === 'keluar').length
-  };
-  let rows = allRows;
-  if(typeFilter !== 'semua') rows = rows.filter(r => (typeFilter === 'keluar' ? r.tipe === 'keluar' : r.tipe !== 'keluar'));
-  if(searchText) rows = rows.filter(r => (r.jenis||'').toLowerCase().includes(searchText) || (r.metode||'').toLowerCase().includes(searchText));
-  const filteredTotal = rows.reduce((a,r) => a + Number(r.jumlah||0), 0);
+  const { allRows, rows, typeFilter, searchText, typeCounts, filteredTotal } = filteredFinansialRows();
   const pageSize = ui.finansialPageSize || 10;
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   if(!ui.finansialPage) ui.finansialPage = 1;
@@ -475,7 +480,11 @@ function renderFinansial(){
   const filterSummary = (typeFilter !== 'semua' || searchText) ? `<p class="muted" style="margin:4px 0 12px;">${rows.length} transaksi cocok &middot; total ${fmtRp(filteredTotal)}</p>` : '';
 
   return `<div class="section-head"><h2>Finansial</h2>
-    ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="finansial">+ Tambah Transaksi</button>` : '<span class="muted">Catatan kapan &amp; bagaimana dana ditransfer</span>'}</div>
+    <div class="section-head-actions">
+      <button type="button" class="btn btn-sm" data-action="export-finansial-excel">${ICONS.download} Export Excel</button>
+      ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="finansial">+ Tambah Transaksi</button>` : '<span class="muted">Catatan kapan &amp; bagaimana dana ditransfer</span>'}
+    </div>
+  </div>
   ${formHtml('finansial', [
     {name:'tanggal', label:'Tanggal', type:'date', required:true},
     {name:'jenis', label:'Jenis / Keperluan', type:'text', required:true, placeholder:'mis. Cicilan 4 Rara'},
@@ -491,6 +500,27 @@ function renderFinansial(){
   ${filterSummary}
   ${body ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Metode/Ket</th>${session?'<th></th>':''}</tr></thead><tbody>${body}</tbody></table></div>` : (allRows.length === 0 ? '<p class="empty">Belum ada transaksi tercatat.</p>' : '<p class="empty">Tidak ada transaksi yang cocok dengan filter ini.</p>')}
   ${pager}`;
+}
+
+function exportFinansialExcel(){
+  if(!window.XLSX){ toast('Gagal export: pustaka Excel belum termuat. Cek koneksi internet lalu coba lagi.'); return; }
+  const { rows } = filteredFinansialRows();
+  if(!rows.length){ toast('Tidak ada transaksi untuk diexport.'); return; }
+  const data = rows.map((r,i) => ({
+    'No': i + 1,
+    'Tanggal': r.tanggal || '',
+    'Jenis': r.jenis || '',
+    'Masuk': r.tipe === 'masuk' ? Number(r.jumlah||0) : '',
+    'Keluar': r.tipe === 'keluar' ? Number(r.jumlah||0) : '',
+    'Saldo': Number(r.saldo||0),
+    'Metode/Ket': r.metode || ''
+  }));
+  const sheet = XLSX.utils.json_to_sheet(data);
+  sheet['!cols'] = [{wch:4},{wch:12},{wch:28},{wch:14},{wch:14},{wch:14},{wch:32}];
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, 'Finansial');
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(book, `Finansial JJS 2026 - ${stamp}.xlsx`);
 }
 
 // ---------- Lampiran ----------
@@ -818,6 +848,8 @@ function attachEvents(){
   document.querySelectorAll('[data-finansial-type-filter]').forEach(btn => {
     btn.addEventListener('click', () => { ui.finansialTypeFilter = btn.getAttribute('data-finansial-type-filter'); ui.finansialPage = 1; render(); });
   });
+  const exportFinansialBtn = document.querySelector('[data-action="export-finansial-excel"]');
+  if(exportFinansialBtn) exportFinansialBtn.addEventListener('click', exportFinansialExcel);
 
   const feedbackNama = document.getElementById('feedback-nama');
   if(feedbackNama) feedbackNama.addEventListener('input', () => { ui.feedbackDraft.nama = feedbackNama.value; });
