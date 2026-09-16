@@ -147,6 +147,15 @@ main.tabpanels{background:var(--paper); border:1px solid var(--line); border-rad
 .section-head h2{font-size:1.3rem; color:var(--forest);}
 .muted{color:var(--sub); font-size:.85rem;}
 
+.status-filter{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
+.filter-chip{
+  border:1px solid var(--line); background:var(--paper); color:var(--sub);
+  padding:6px 12px; border-radius:99px; font-size:.8rem; font-weight:600; cursor:pointer;
+  transition:filter .15s;
+}
+.filter-chip:hover{filter:brightness(1.04);}
+.filter-chip.active{background:var(--forest); border-color:var(--forest); color:var(--paper-2);}
+
 .search-box{display:flex; align-items:center; gap:8px; margin-bottom:12px;}
 .search-box input{
   flex:1; max-width:320px; border:1px solid var(--line); border-radius:8px; padding:8px 12px;

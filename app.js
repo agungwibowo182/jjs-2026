@@ -326,19 +326,32 @@ function renderRingkasan(){
   const pct = keb > 0 ? Math.min(100, Math.round(masuk/keb*100)) : 0;
   const recent = sortedFinansial().slice(-5).reverse();
   const filterText = (ui.pesertaFilter || '').trim().toLowerCase();
-  const visiblePeserta = filterText
-    ? state.peserta.filter(p => p.nama.toLowerCase().includes(filterText))
-    : state.peserta;
-  const pesertaRows = visiblePeserta.map((p) => {
+  const statusFilter = ui.pesertaStatusFilter || 'semua';
+  const pesertaWithStatus = state.peserta.map(p => ({
+    p,
+    status: p.dibayar >= target ? 'lunas' : (p.dibayar > 0 ? 'kurang' : 'belum')
+  }));
+  const statusCounts = {
+    semua: pesertaWithStatus.length,
+    lunas: pesertaWithStatus.filter(x => x.status === 'lunas').length,
+    kurang: pesertaWithStatus.filter(x => x.status === 'kurang').length,
+    belum: pesertaWithStatus.filter(x => x.status === 'belum').length
+  };
+  let visiblePeserta = pesertaWithStatus;
+  if(statusFilter !== 'semua') visiblePeserta = visiblePeserta.filter(x => x.status === statusFilter);
+  if(filterText) visiblePeserta = visiblePeserta.filter(x => x.p.nama.toLowerCase().includes(filterText));
+  const STATUS_BADGE = { lunas: 'good', kurang: 'warn', belum: 'bad' };
+  const pesertaRows = visiblePeserta.map(({ p, status }) => {
     const idx = state.peserta.indexOf(p);
-    const status = p.dibayar >= target ? 'good' : (p.dibayar > 0 ? 'warn' : 'bad');
-    const label = p.dibayar >= target ? 'Lunas' : (p.dibayar > 0 ? 'Kurang ' + fmtRp(target-p.dibayar) : 'Belum bayar');
+    const label = status === 'lunas' ? 'Lunas' : (status === 'kurang' ? 'Kurang ' + fmtRp(target - p.dibayar) : 'Belum bayar');
     return `<tr>
       <td>${idx+1}</td><td>${esc(p.nama)}</td><td class="num">${fmtRp(p.dibayar)}</td>
-      <td><span class="badge ${status}">${label}</span></td>
+      <td><span class="badge ${STATUS_BADGE[status]}">${label}</span></td>
       ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="peserta:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="peserta:${idx}">Hapus</button></td>` : ''}
     </tr>`;
   }).join('');
+  const STATUS_LABELS = { semua: 'Semua', belum: 'Belum Bayar', kurang: 'Kurang', lunas: 'Lunas' };
+  const statusChips = ['semua','belum','kurang','lunas'].map(key => `<button type="button" class="filter-chip ${statusFilter===key?'active':''}" data-status-filter="${key}">${STATUS_LABELS[key]} (${statusCounts[key]})</button>`).join('');
 
   return `<div class="section-head"><h2>Ringkasan</h2><span class="muted">Target iuran: ${fmtRp(target)}/orang</span></div>
   <div class="stats stats-3">
@@ -356,6 +369,7 @@ function renderRingkasan(){
 
   <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Status Iuran Peserta</h2>
     ${session ? `<button class="btn btn-sm" data-toggle-form="peserta">+ Tambah Peserta</button>` : ''}</div>
+  <div class="status-filter">${statusChips}</div>
   <div class="search-box">
     <input type="search" id="peserta-filter" placeholder="Cari nama peserta..." value="${esc(ui.pesertaFilter || '')}">
     ${filterText ? `<button type="button" class="btn btn-sm btn-ghost" data-action="clear-peserta-filter">Bersihkan</button>` : ''}
@@ -365,7 +379,7 @@ function renderRingkasan(){
     {name:'dibayar', label:'Sudah Dibayar (Rp)', type:'number', required:true}
   ])}
   ${pesertaRows ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Nama</th><th>Dibayar</th><th>Status</th>${session?'<th></th>':''}</tr></thead><tbody>${pesertaRows}</tbody></table></div>`
-    : (filterText ? `<p class="empty">Tidak ada peserta bernama "${esc(ui.pesertaFilter)}".</p>` : '<p class="empty">Belum ada peserta.</p>')}
+    : (state.peserta.length === 0 ? '<p class="empty">Belum ada peserta.</p>' : '<p class="empty">Tidak ada peserta yang cocok dengan filter ini.</p>')}
 
   <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Transaksi Terakhir</h2></div>
   ${recent.length ? `<div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Nominal</th></tr></thead><tbody>${
@@ -768,6 +782,9 @@ function attachEvents(){
   });
   const clearFilterBtn = document.querySelector('[data-action="clear-peserta-filter"]');
   if(clearFilterBtn) clearFilterBtn.addEventListener('click', () => { ui.pesertaFilter = ''; render(); });
+  document.querySelectorAll('[data-status-filter]').forEach(btn => {
+    btn.addEventListener('click', () => { ui.pesertaStatusFilter = btn.getAttribute('data-status-filter'); render(); });
+  });
 
   const feedbackNama = document.getElementById('feedback-nama');
   if(feedbackNama) feedbackNama.addEventListener('input', () => { ui.feedbackDraft.nama = feedbackNama.value; });
