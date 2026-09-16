@@ -28,9 +28,16 @@ create policy "Hanya admin login boleh update" on app_state
   using (auth.role() = 'authenticated');
 
 -- 5) Aktifkan realtime supaya perubahan admin langsung muncul di layar semua orang
--- (kalau tabelnya sudah pernah ditambahkan sebelumnya, baris ini akan error
---  "already member of publication" -- itu tandanya sudah aktif, abaikan saja)
-alter publication supabase_realtime add table app_state;
+--    (dicek dulu supaya baris ini TIDAK PERNAH error walau dijalankan berkali-kali)
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'app_state'
+  ) then
+    alter publication supabase_realtime add table app_state;
+  end if;
+end $$;
 
 -- 6) Masukkan data awal (dari Excel "Jalan-jalan Saans 2026.xlsx")
 insert into app_state (id, data)
@@ -93,4 +100,12 @@ create policy "Hanya admin login boleh hapus kritik saran" on feedback
   for delete
   using (auth.role() = 'authenticated');
 
-alter publication supabase_realtime add table feedback;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'feedback'
+  ) then
+    alter publication supabase_realtime add table feedback;
+  end if;
+end $$;
