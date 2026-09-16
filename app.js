@@ -506,7 +506,7 @@ function renderAnggaran(){
       ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="anggaran:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="anggaran:${idx}">Hapus</button></td>` : ''}
     </tr>`;
   }).join('');
-  const notes = state.anggaran.catatan.map((n, idx) => `<li>${esc(n)}${session ? ` <button class="btn btn-sm btn-ghost" data-del="catatan:${idx}">hapus</button>` : ''}</li>`).join('');
+  const notes = state.anggaran.catatan.map((n, idx) => `<li>${esc(n)}${session ? ` <button class="btn btn-sm btn-ghost" data-edit="catatan:${idx}">ubah</button><button class="btn btn-sm btn-ghost" data-del="catatan:${idx}">hapus</button>` : ''}</li>`).join('');
   return `<div class="section-head"><h2>Anggaran Biaya</h2>
     ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="anggaran">+ Tambah Item</button>` : '<span class="muted">Rincian budget pengeluaran</span>'}</div>
   <div class="stats stats-3">
@@ -850,6 +850,7 @@ function valuesFor(section, idx){
   if(section === 'hari2') return state.rundown.hari2[idx];
   if(section === 'games') return state.rundown.games[idx];
   if(section === 'panitia') return state.susunan.panitia[idx];
+  if(section === 'catatan') return { teks: state.anggaran.catatan[idx] };
   return {};
 }
 function removeAt(s, section, idx){
@@ -882,7 +883,8 @@ function finalizeSubmit(section, data, editIndex){
       s.anggaran.targetBiaya = Number(data.targetBiaya||0);
       s.anggaran.targetTambahan = Number(data.targetTambahan||0);
     } else if(section === 'catatan'){
-      s.anggaran.catatan.push(data.teks);
+      if(editIndex != null) s.anggaran.catatan[editIndex] = data.teks;
+      else s.anggaran.catatan.push(data.teks);
     } else if(section === 'peserta'){
       data.dibayar = Number(data.dibayar||0);
       if(editIndex != null) Object.assign(s.peserta[editIndex], data);
