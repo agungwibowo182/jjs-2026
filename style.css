@@ -115,7 +115,11 @@ button{font-family:inherit;}
 }
 .loginbox input{border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:.85rem; background:var(--paper-2); color:var(--ink); width:150px;}
 
-.tabs{display:flex; gap:4px; overflow-x:auto; margin:18px 0 0; padding-bottom:2px;}
+.tabs{
+  display:flex; gap:4px; overflow-x:auto; margin:18px 0 0; padding-bottom:2px;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+.tabs::-webkit-scrollbar{display:none; height:0;}
 .tabbtn{
   border:1px solid var(--line); border-bottom:none; background:var(--paper-2); color:var(--sub);
   padding:10px 16px; border-radius:10px 10px 0 0; font-weight:600; font-size:.88rem; cursor:pointer;

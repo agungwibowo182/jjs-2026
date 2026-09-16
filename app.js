@@ -589,6 +589,8 @@ function attachEvents(){
       ui.activeTab = btn.getAttribute('data-tab');
       sessionStorage.setItem('jjs_tab', ui.activeTab);
       render();
+      const activeBtn = document.querySelector('.tabbtn.active');
+      if(activeBtn) activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     });
   });
 
