@@ -194,7 +194,15 @@ form.inlineform input, form.inlineform select, form.inlineform textarea{
   color:var(--ink); font-family:inherit; font-size:.88rem;
 }
 form.inlineform textarea{resize:vertical; min-height:38px;}
+form.inlineform .full{grid-column:1/-1;}
 .formbar{grid-column:1/-1; display:flex; gap:8px; margin-top:2px; align-items:center;}
+
+.feedback-list{display:flex; flex-direction:column; gap:12px;}
+.feedback-item{background:var(--paper-2); border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
+.fb-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:6px;}
+.fb-nama{font-weight:700; color:var(--forest); font-size:.88rem;}
+.fb-time{font-size:.74rem; color:var(--sub); white-space:nowrap;}
+.fb-pesan{margin:0 0 8px; font-size:.9rem; color:var(--ink); white-space:pre-wrap; overflow-wrap:anywhere;}
 
 .video-feature{display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:22px;}
 .video-feature video{

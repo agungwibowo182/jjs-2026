@@ -60,3 +60,37 @@ drop policy if exists "Hanya admin login boleh hapus lampiran" on storage.object
 create policy "Hanya admin login boleh hapus lampiran" on storage.objects
   for delete
   using (bucket_id = 'jjs-2026' and auth.role() = 'authenticated');
+
+-- =========================================================
+-- 8) Kritik & Saran -- tabel terpisah, sengaja beda aturan dari app_state:
+--    SIAPA SAJA (termasuk yang belum login) boleh MENGIRIM, tapi hanya
+--    admin yang login yang boleh MENGHAPUS. Ini satu-satunya bagian
+--    situs yang bisa ditulis publik tanpa login.
+-- =========================================================
+
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  nama text,
+  pesan text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table feedback enable row level security;
+
+drop policy if exists "Publik boleh baca kritik saran" on feedback;
+create policy "Publik boleh baca kritik saran" on feedback
+  for select
+  using (true);
+
+-- Siapa saja boleh kirim, dengan validasi dasar: pesan tidak kosong dan tidak lebih dari 2000 karakter
+drop policy if exists "Siapa saja boleh kirim kritik saran" on feedback;
+create policy "Siapa saja boleh kirim kritik saran" on feedback
+  for insert
+  with check (char_length(pesan) > 0 and char_length(pesan) <= 2000);
+
+drop policy if exists "Hanya admin login boleh hapus kritik saran" on feedback;
+create policy "Hanya admin login boleh hapus kritik saran" on feedback
+  for delete
+  using (auth.role() = 'authenticated');
+
+alter publication supabase_realtime add table feedback;

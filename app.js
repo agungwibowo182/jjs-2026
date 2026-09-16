@@ -32,7 +32,7 @@ const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov
 let state = null;
 let session = null;
 let loadError = null;
-const ui = { activeTab: sessionStorage.getItem('jjs_tab') || 'ringkasan', loginOpen: false, forms: {}, lightboxImages: null, lightboxIndex: 0, busy: false };
+const ui = { activeTab: sessionStorage.getItem('jjs_tab') || 'ringkasan', loginOpen: false, forms: {}, lightboxImages: null, lightboxIndex: 0, busy: false, feedbackDraft: { nama: '', pesan: '' } };
 
 function fmtRp(n){
   n = Math.round(Number(n) || 0);
@@ -44,6 +44,14 @@ function fmtDate(iso){
   if(!iso) return "-";
   const p = iso.split("-"); if(p.length < 3) return iso;
   return parseInt(p[2],10) + " " + MONTHS[parseInt(p[1],10)-1] + " " + p[0];
+}
+function fmtDateTime(iso){
+  if(!iso) return "-";
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return iso;
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear() + ", " + hh + ":" + mm;
 }
 function esc(s){
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -65,8 +73,11 @@ const TABS = [
   {key:'lampiran', label:'Lampiran Finansial'},
   {key:'anggaran', label:'Anggaran Biaya'},
   {key:'rundown', label:'Rundown Acara'},
-  {key:'panitia', label:'Susunan Panitia'}
+  {key:'panitia', label:'Susunan Panitia'},
+  {key:'kritik', label:'Kritik & Saran'}
 ];
+
+let feedbackList = [];
 
 // ---------- boot ----------
 async function boot(){
@@ -82,6 +93,21 @@ async function boot(){
   supabase.channel('app_state_live')
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'id=eq.main' }, payload => {
       state = payload.new.data;
+      render();
+    })
+    .subscribe();
+
+  const { data: fb, error: fbErr } = await supabase.from('feedback').select('*').order('created_at', { ascending: false });
+  if(!fbErr){ feedbackList = fb; render(); }
+
+  supabase.channel('feedback_live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feedback' }, payload => {
+      if(feedbackList.some(f => f.id === payload.new.id)) return;
+      feedbackList = [payload.new, ...feedbackList];
+      render();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'feedback' }, payload => {
+      feedbackList = feedbackList.filter(f => f.id !== payload.old.id);
       render();
     })
     .subscribe();
@@ -146,6 +172,7 @@ function render(){
         ${panel('anggaran', renderAnggaran)}
         ${panel('rundown', renderRundown)}
         ${panel('panitia', renderPanitia)}
+        ${panel('kritik', renderKritikSaran)}
       </main>
     </div>
     <footer class="hint">Jalan-Jalan Saans 2026 &middot; ${session ? 'Mode admin aktif — perubahan tersimpan untuk semua orang.' : 'Mode lihat &mdash; hanya seksi keuangan yang bisa mengubah data.'}</footer>
@@ -518,6 +545,26 @@ function renderPanitia(){
   <div class="tablewrap"><table><thead><tr><th>Jabatan</th><th>Nama</th><th>Peran Singkat</th>${session?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
+// ---------- Kritik & Saran ----------
+function renderKritikSaran(){
+  const items = feedbackList.map(f => `<div class="feedback-item">
+    <div class="fb-head">
+      <span class="fb-nama">${esc(f.nama && f.nama.trim() ? f.nama : 'Anonim')}</span>
+      <span class="fb-time">${fmtDateTime(f.created_at)}</span>
+    </div>
+    <p class="fb-pesan">${esc(f.pesan)}</p>
+    ${session ? `<button type="button" class="btn btn-sm btn-danger" data-del-feedback="${f.id}">Hapus</button>` : ''}
+  </div>`).join('');
+
+  return `<div class="section-head"><h2>Kritik &amp; Saran</h2><span class="muted">Boleh diisi siapa saja, nama opsional</span></div>
+  <form class="inlineform" id="feedback-form">
+    <div><label>Nama (opsional)</label><input type="text" id="feedback-nama" name="nama" value="${esc(ui.feedbackDraft.nama)}" placeholder="mis. Rara, atau kosongkan" maxlength="60"></div>
+    <div class="full"><label>Kritik / Saran</label><textarea id="feedback-pesan" name="pesan" required maxlength="2000" placeholder="Tulis kritik atau saran Anda di sini...">${esc(ui.feedbackDraft.pesan)}</textarea></div>
+    <div class="formbar"><button type="submit" class="btn btn-primary btn-sm">Kirim</button></div>
+  </form>
+  ${items ? `<div class="feedback-list">${items}</div>` : '<p class="empty">Belum ada kritik/saran. Jadilah yang pertama menulis!</p>'}`;
+}
+
 // ---------- generic inline form ----------
 function formHtml(section, fields){
   const f = ui.forms[section];
@@ -699,6 +746,43 @@ function attachEvents(){
   });
   const clearFilterBtn = document.querySelector('[data-action="clear-peserta-filter"]');
   if(clearFilterBtn) clearFilterBtn.addEventListener('click', () => { ui.pesertaFilter = ''; render(); });
+
+  const feedbackNama = document.getElementById('feedback-nama');
+  if(feedbackNama) feedbackNama.addEventListener('input', () => { ui.feedbackDraft.nama = feedbackNama.value; });
+  const feedbackPesan = document.getElementById('feedback-pesan');
+  if(feedbackPesan) feedbackPesan.addEventListener('input', () => { ui.feedbackDraft.pesan = feedbackPesan.value; });
+
+  const feedbackForm = document.getElementById('feedback-form');
+  if(feedbackForm) feedbackForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const nama = feedbackForm.nama.value.trim();
+    const pesan = feedbackForm.pesan.value.trim();
+    if(!pesan) return;
+    const submitBtn = feedbackForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mengirim...';
+    const { data, error } = await supabase.from('feedback').insert({ nama: nama || null, pesan }).select().single();
+    if(error){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Kirim';
+      toast('Gagal mengirim: ' + error.message);
+      return;
+    }
+    if(!feedbackList.some(f => f.id === data.id)) feedbackList = [data, ...feedbackList];
+    ui.feedbackDraft = { nama: '', pesan: '' };
+    toast('Terkirim, terima kasih!');
+    render();
+  });
+  document.querySelectorAll('[data-del-feedback]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('Hapus kritik/saran ini?')) return;
+      const id = btn.getAttribute('data-del-feedback');
+      const { error } = await supabase.from('feedback').delete().eq('id', id);
+      if(error){ toast('Gagal menghapus: ' + error.message); return; }
+      feedbackList = feedbackList.filter(f => f.id !== id);
+      render();
+    });
+  });
 
   document.querySelectorAll('[data-copy-text]').forEach(btn => {
     btn.addEventListener('click', async () => {
