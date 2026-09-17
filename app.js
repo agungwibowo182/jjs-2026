@@ -594,6 +594,11 @@ function renderRundown(){
     ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="games:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="games:${idx}">Hapus</button></td>` : ''}
   </tr>`).join('');
   return `<div class="section-head"><h2>Rundown Acara</h2><span class="muted">${esc(state.susunan.tanggal)}</span></div>
+  ${session ? `<button class="btn btn-sm btn-ghost" data-toggle-form="harilabel">Ubah label hari</button>` : ''}
+  ${formHtml('harilabel', [
+    {name:'hari1Label', label:'Label Hari 1', type:'text', required:true, placeholder:'mis. Minggu, 1 November'},
+    {name:'hari2Label', label:'Label Hari 2', type:'text', required:true, placeholder:'mis. Senin, 2 November'}
+  ])}
   <div class="schedule">
     <div class="day"><h3>Hari 1 &ndash; ${esc(state.rundown.hari1Label)}</h3>
       ${session ? formHtml('hari1', [{name:'waktu',label:'Waktu',type:'text',required:true},{name:'kegiatan',label:'Kegiatan',type:'text',required:true}]) : ''}
@@ -904,6 +909,7 @@ function attachEvents(){
 function defaultsFor(section){
   if(section === 'target') return { targetBiaya: state.anggaran.targetBiaya, targetTambahan: state.anggaran.targetTambahan };
   if(section === 'info') return { tema: state.susunan.tema, tanggal: state.susunan.tanggal, tempat: state.susunan.tempat };
+  if(section === 'harilabel') return { hari1Label: state.rundown.hari1Label, hari2Label: state.rundown.hari2Label };
   return {};
 }
 function valuesFor(section, idx){
@@ -963,6 +969,8 @@ function finalizeSubmit(section, data, editIndex){
       if(editIndex != null) Object.assign(s.susunan.panitia[editIndex], data); else s.susunan.panitia.push(data);
     } else if(section === 'info'){
       s.susunan.tema = data.tema; s.susunan.tanggal = data.tanggal; s.susunan.tempat = data.tempat;
+    } else if(section === 'harilabel'){
+      s.rundown.hari1Label = data.hari1Label; s.rundown.hari2Label = data.hari2Label;
     }
     closeForm(section);
   });
