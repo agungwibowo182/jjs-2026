@@ -27,12 +27,16 @@ try {
 } catch(e){
   bootError = e.message;
 }
-const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+const MONTHS_BY_LANG = {
+  id: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
+  en: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+  ar: ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]
+};
 
 let state = null;
 let session = null;
 let loadError = null;
-const ui = { activeTab: sessionStorage.getItem('jjs_tab') || 'ringkasan', loginOpen: false, forms: {}, lightboxImages: null, lightboxIndex: 0, busy: false, feedbackDraft: { nama: '', pesan: '' } };
+const ui = { activeTab: sessionStorage.getItem('jjs_tab') || 'ringkasan', lang: localStorage.getItem('jjs_lang') || 'id', langMenuOpen: false, loginOpen: false, forms: {}, lightboxImages: null, lightboxIndex: 0, busy: false, feedbackDraft: { nama: '', pesan: '' } };
 
 function fmtRp(n){
   n = Math.round(Number(n) || 0);
@@ -43,20 +47,249 @@ function fmtRp(n){
 function fmtDate(iso){
   if(!iso) return "-";
   const p = iso.split("-"); if(p.length < 3) return iso;
-  return parseInt(p[2],10) + " " + MONTHS[parseInt(p[1],10)-1] + " " + p[0];
+  const months = MONTHS_BY_LANG[ui.lang] || MONTHS_BY_LANG.id;
+  return parseInt(p[2],10) + " " + months[parseInt(p[1],10)-1] + " " + p[0];
 }
 function fmtDateTime(iso){
   if(!iso) return "-";
   const d = new Date(iso);
   if(isNaN(d.getTime())) return iso;
+  const months = MONTHS_BY_LANG[ui.lang] || MONTHS_BY_LANG.id;
   const hh = String(d.getHours()).padStart(2,'0');
   const mm = String(d.getMinutes()).padStart(2,'0');
-  return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear() + ", " + hh + ":" + mm;
+  return d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear() + ", " + hh + ":" + mm;
 }
 function esc(s){
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+// ---------- i18n ----------
+const I18N = {
+  tab_ringkasan: {id:'Ringkasan', en:'Summary', ar:'ملخص'},
+  tab_galeri: {id:'Galeri', en:'Gallery', ar:'معرض الصور'},
+  tab_finansial: {id:'Finansial', en:'Finance', ar:'المالية'},
+  tab_lampiran: {id:'Lampiran Finansial', en:'Financial Attachments', ar:'المرفقات المالية'},
+  tab_anggaran: {id:'Anggaran Biaya', en:'Budget', ar:'الميزانية'},
+  tab_rundown: {id:'Rundown Acara', en:'Event Schedule', ar:'جدول الفعالية'},
+  tab_panitia: {id:'Susunan Panitia', en:'Committee', ar:'تشكيل اللجنة'},
+  tab_kritik: {id:'Kritik & Saran', en:'Feedback', ar:'الآراء والاقتراحات'},
+
+  loading_data: {id:'Memuat data...', en:'Loading data...', ar:'جارٍ تحميل البيانات...'},
+  loaderror_prefix: {id:'Gagal memuat: {msg}', en:'Failed to load: {msg}', ar:'فشل التحميل: {msg}'},
+
+  footer_admin: {id:'Mode admin aktif — perubahan tersimpan untuk semua orang.', en:'Admin mode active — changes are saved for everyone.', ar:'وضع الإدارة نشط — تُحفظ التغييرات للجميع.'},
+  footer_view: {id:'Mode lihat — hanya seksi keuangan yang bisa mengubah data.', en:'View mode — only the finance team can edit data.', ar:'وضع العرض — يمكن لقسم المالية فقط تعديل البيانات.'},
+
+  hero_online: {id:'orang online', en:'people online', ar:'متصل الآن'},
+  hero_admin_mode: {id:'Mode Admin', en:'Admin Mode', ar:'وضع الإدارة'},
+  hero_logout: {id:'Keluar', en:'Log out', ar:'تسجيل الخروج'},
+  hero_login_cta: {id:'Masuk sebagai Admin', en:'Log in as Admin', ar:'الدخول كمسؤول'},
+  hero_email_placeholder: {id:'Email admin', en:'Admin email', ar:'البريد الإلكتروني للمسؤول'},
+  hero_password_placeholder: {id:'Kata sandi', en:'Password', ar:'كلمة المرور'},
+  hero_login_submit: {id:'Masuk', en:'Log in', ar:'دخول'},
+
+  countdown_label: {id:'Countdown ke Hari-H', en:'Countdown to the Big Day', ar:'العد التنازلي ليوم الفعالية'},
+  countdown_days: {id:'Hari', en:'Days', ar:'يوم'},
+  countdown_hours: {id:'Jam', en:'Hours', ar:'ساعة'},
+  countdown_min: {id:'Menit', en:'Min', ar:'دقيقة'},
+  countdown_sec: {id:'Detik', en:'Sec', ar:'ثانية'},
+  countdown_done: {id:'Hari-H sudah tiba — selamat jalan-jalan! 🏕️', en:'The big day has arrived — happy travels! 🏕️', ar:'لقد حان اليوم المنتظر — رحلة سعيدة! 🏕️'},
+
+  common_save: {id:'Simpan', en:'Save', ar:'حفظ'},
+  common_save_changes: {id:'Simpan Perubahan', en:'Save Changes', ar:'حفظ التغييرات'},
+  common_saving: {id:'Menyimpan...', en:'Saving...', ar:'جارٍ الحفظ...'},
+  common_cancel: {id:'Batal', en:'Cancel', ar:'إلغاء'},
+  common_edit: {id:'Ubah', en:'Edit', ar:'تعديل'},
+  common_delete: {id:'Hapus', en:'Delete', ar:'حذف'},
+  confirm_hapus_data: {id:'Hapus data ini?', en:'Delete this entry?', ar:'هل تريد حذف هذا العنصر؟'},
+
+  ringkasan_title: {id:'Ringkasan', en:'Summary', ar:'ملخص'},
+  ringkasan_target: {id:'Target iuran: {rp}/orang', en:'Dues target: {rp}/person', ar:'هدف الاشتراك: {rp}/شخص'},
+  stat_total_masuk: {id:'Total Dana Masuk', en:'Total Funds In', ar:'إجمالي الأموال الواردة'},
+  stat_total_keluar: {id:'Total Dana Keluar', en:'Total Funds Out', ar:'إجمالي الأموال الصادرة'},
+  stat_saldo_kas: {id:'Saldo Kas Saat Ini', en:'Current Cash Balance', ar:'الرصيد النقدي الحالي'},
+  stat_kebutuhan: {id:'Kebutuhan Anggaran', en:'Budget Needed', ar:'الميزانية المطلوبة'},
+  stat_masih_kurang: {id:'Masih Kurang', en:'Still Short', ar:'لا يزال ناقصًا'},
+  stat_surplus: {id:'Surplus', en:'Surplus', ar:'فائض'},
+  stat_peserta: {id:'Peserta Terdaftar', en:'Registered Participants', ar:'المشاركون المسجلون'},
+  orang: {id:'orang', en:'people', ar:'شخص'},
+  progress_note: {id:'{pct}% dari kebutuhan anggaran sudah terkumpul · saldo kas di atas sudah memperhitungkan dana yang telah dikeluarkan.', en:'{pct}% of the required budget has been collected · the cash balance above already accounts for funds spent.', ar:'تم جمع {pct}% من الميزانية المطلوبة · الرصيد النقدي أعلاه يأخذ بعين الاعتبار الأموال التي تم إنفاقها.'},
+
+  paycard_title: {id:'Cicilan via Transfer ke DANA', en:'Installments via Transfer to DANA', ar:'الأقساط عبر التحويل إلى DANA'},
+  paycard_copy: {id:'Salin', en:'Copy', ar:'نسخ'},
+  paycard_copy_title: {id:'Salin nomor', en:'Copy number', ar:'نسخ الرقم'},
+  paycard_an: {id:'a.n.', en:'on behalf of', ar:'باسم'},
+
+  status_iuran_title: {id:'Status Iuran Peserta', en:'Participant Payment Status', ar:'حالة سداد المشاركين'},
+  btn_tambah_peserta: {id:'+ Tambah Peserta', en:'+ Add Participant', ar:'+ إضافة مشارك'},
+  status_semua: {id:'Semua', en:'All', ar:'الكل'},
+  status_belum: {id:'Belum Bayar', en:'Unpaid', ar:'لم يدفع'},
+  status_kurang: {id:'Kurang', en:'Partial', ar:'ناقص'},
+  status_lunas: {id:'Lunas', en:'Paid', ar:'مدفوع بالكامل'},
+  search_peserta_placeholder: {id:'Cari nama peserta...', en:'Search participant name...', ar:'ابحث عن اسم المشارك...'},
+  btn_bersihkan: {id:'Bersihkan', en:'Clear', ar:'مسح'},
+  label_nama: {id:'Nama', en:'Name', ar:'الاسم'},
+  label_dibayar: {id:'Sudah Dibayar (Rp)', en:'Amount Paid (Rp)', ar:'المبلغ المدفوع (روبية)'},
+  th_no: {id:'No', en:'No', ar:'الرقم'},
+  th_nama: {id:'Nama', en:'Name', ar:'الاسم'},
+  th_dibayar: {id:'Dibayar', en:'Paid', ar:'المدفوع'},
+  th_status: {id:'Status', en:'Status', ar:'الحالة'},
+  empty_peserta: {id:'Belum ada peserta.', en:'No participants yet.', ar:'لا يوجد مشاركون بعد.'},
+  empty_peserta_filtered: {id:'Tidak ada peserta yang cocok dengan filter ini.', en:'No participants match this filter.', ar:'لا يوجد مشاركون يطابقون هذا الفلتر.'},
+  status_label_lunas: {id:'Lunas', en:'Paid', ar:'مدفوع بالكامل'},
+  status_label_belum: {id:'Belum bayar', en:'Not paid yet', ar:'لم يدفع بعد'},
+  status_label_kurang: {id:'Kurang', en:'Short by', ar:'ناقص'},
+
+  transaksi_terakhir_title: {id:'Transaksi Terakhir', en:'Recent Transactions', ar:'أحدث المعاملات'},
+  th_tanggal: {id:'Tanggal', en:'Date', ar:'التاريخ'},
+  th_jenis: {id:'Jenis', en:'Type', ar:'النوع'},
+  th_nominal: {id:'Nominal', en:'Amount', ar:'المبلغ'},
+  empty_transaksi: {id:'Belum ada transaksi.', en:'No transactions yet.', ar:'لا توجد معاملات بعد.'},
+
+  galeri_title: {id:'Galeri', en:'Gallery', ar:'معرض الصور'},
+  galeri_subtitle: {id:'Fasilitas Villa Demang Puncak', en:'Villa Demang Puncak Facilities', ar:'مرافق فيلا ديمانج بونشاك'},
+  video_unsupported: {id:'Browser Anda tidak mendukung pemutaran video.', en:'Your browser does not support video playback.', ar:'متصفحك لا يدعم تشغيل الفيديو.'},
+  video_caption: {id:'Cuplikan suasana Villa Demang — kredit @puncakmediabogor', en:'A glimpse of Villa Demang — credit @puncakmediabogor', ar:'لمحة من أجواء فيلا ديمانج — من حساب @puncakmediabogor'},
+
+  finansial_title: {id:'Finansial', en:'Finance', ar:'المالية'},
+  finansial_subtitle: {id:'Catatan kapan & bagaimana dana ditransfer', en:'Record of when & how funds were transferred', ar:'سجل بموعد وطريقة تحويل الأموال'},
+  btn_export_excel: {id:'Export Excel', en:'Export to Excel', ar:'تصدير إلى إكسل'},
+  btn_tambah_transaksi: {id:'+ Tambah Transaksi', en:'+ Add Transaction', ar:'+ إضافة معاملة'},
+  label_tanggal: {id:'Tanggal', en:'Date', ar:'التاريخ'},
+  label_jenis_keperluan: {id:'Jenis / Keperluan', en:'Type / Purpose', ar:'النوع / الغرض'},
+  ph_jenis_keperluan: {id:'mis. Cicilan 4 Rara', en:'e.g. Installment 4 Rara', ar:'مثال: القسط 4 رارا'},
+  label_tipe: {id:'Tipe', en:'Type', ar:'النوع'},
+  opt_uang_masuk: {id:'Uang Masuk', en:'Money In', ar:'أموال واردة'},
+  opt_uang_keluar: {id:'Uang Keluar', en:'Money Out', ar:'أموال صادرة'},
+  label_nominal: {id:'Nominal (Rp)', en:'Amount (Rp)', ar:'المبلغ (روبية)'},
+  label_metode: {id:'Metode / Keterangan', en:'Method / Note', ar:'الطريقة / الملاحظة'},
+  ph_metode: {id:'mis. Transfer ke DANA via BCA', en:'e.g. Transfer to DANA via BCA', ar:'مثال: تحويل إلى DANA عبر BCA'},
+  search_finansial_placeholder: {id:'Cari jenis atau metode/keterangan...', en:'Search type or method/note...', ar:'ابحث حسب النوع أو الطريقة/الملاحظة...'},
+  filter_summary: {id:'{n} transaksi cocok · total {rp}', en:'{n} matching transactions · total {rp}', ar:'{n} معاملة مطابقة · الإجمالي {rp}'},
+  th_masuk: {id:'Masuk', en:'In', ar:'وارد'},
+  th_keluar: {id:'Keluar', en:'Out', ar:'صادر'},
+  th_saldo: {id:'Saldo', en:'Balance', ar:'الرصيد'},
+  th_metode_ket: {id:'Metode/Ket', en:'Method/Note', ar:'الطريقة/الملاحظة'},
+  empty_finansial: {id:'Belum ada transaksi tercatat.', en:'No transactions recorded yet.', ar:'لا توجد معاملات مسجلة بعد.'},
+  empty_finansial_filtered: {id:'Tidak ada transaksi yang cocok dengan filter ini.', en:'No transactions match this filter.', ar:'لا توجد معاملات تطابق هذا الفلتر.'},
+  pager_baris: {id:'Baris/halaman', en:'Rows/page', ar:'صفوف/صفحة'},
+  pager_prev: {id:'‹ Sebelumnya', en:'‹ Previous', ar:'‹ السابق'},
+  pager_next: {id:'Berikutnya ›', en:'Next ›', ar:'التالي ›'},
+  pager_info: {id:'Halaman {page} dari {total} · {n} transaksi', en:'Page {page} of {total} · {n} transactions', ar:'صفحة {page} من {total} · {n} معاملة'},
+
+  lampiran_title: {id:'Lampiran Finansial', en:'Financial Attachments', ar:'المرفقات المالية'},
+  lampiran_subtitle: {id:'Bukti transfer & kwitansi', en:'Transfer proofs & receipts', ar:'إثباتات التحويل والإيصالات'},
+  btn_tambah_lampiran: {id:'+ Tambah Lampiran', en:'+ Add Attachment', ar:'+ إضافة مرفق'},
+  label_judul: {id:'Judul', en:'Title', ar:'العنوان'},
+  ph_judul: {id:'mis. Kwitansi DP Villa', en:'e.g. Villa Down Payment Receipt', ar:'مثال: إيصال دفعة الفيلا'},
+  label_foto: {id:'Foto / Scan', en:'Photo / Scan', ar:'صورة / مسح ضوئي'},
+  label_keterangan: {id:'Keterangan', en:'Note', ar:'ملاحظة'},
+  empty_lampiran: {id:'Belum ada lampiran diunggah.', en:'No attachments uploaded yet.', ar:'لم يتم رفع أي مرفقات بعد.'},
+
+  anggaran_title: {id:'Anggaran Biaya', en:'Budget', ar:'الميزانية'},
+  anggaran_subtitle: {id:'Rincian budget pengeluaran', en:'Expense budget breakdown', ar:'تفاصيل ميزانية المصروفات'},
+  btn_tambah_item: {id:'+ Tambah Item', en:'+ Add Item', ar:'+ إضافة عنصر'},
+  stat_target_iuran: {id:'Target Iuran / Orang', en:'Dues Target / Person', ar:'هدف الاشتراك / شخص'},
+  btn_ubah_target: {id:'Ubah target', en:'Edit target', ar:'تعديل الهدف'},
+  stat_grand_total: {id:'Grand Total Anggaran', en:'Grand Total Budget', ar:'إجمالي الميزانية'},
+  stat_kekurangan: {id:'Kekurangan Dana', en:'Funding Shortfall', ar:'عجز التمويل'},
+  stat_sisa_dana: {id:'Sisa Dana', en:'Remaining Funds', ar:'الأموال المتبقية'},
+  label_biaya_per_orang: {id:'Biaya per Orang (Rp)', en:'Cost per Person (Rp)', ar:'التكلفة للشخص (روبية)'},
+  label_tambahan_biaya: {id:'Tambahan Biaya per Orang (Rp)', en:'Extra Cost per Person (Rp)', ar:'تكلفة إضافية للشخص (روبية)'},
+  label_item: {id:'Item', en:'Item', ar:'العنصر'},
+  label_harga_satuan: {id:'Harga Satuan (Rp)', en:'Unit Price (Rp)', ar:'سعر الوحدة (روبية)'},
+  label_jumlah: {id:'Jumlah', en:'Qty', ar:'الكمية'},
+  th_item: {id:'Item', en:'Item', ar:'العنصر'},
+  th_harga: {id:'Harga', en:'Price', ar:'السعر'},
+  th_jumlah: {id:'Jumlah', en:'Qty', ar:'الكمية'},
+  th_total: {id:'Total', en:'Total', ar:'الإجمالي'},
+  th_keterangan: {id:'Keterangan', en:'Note', ar:'ملاحظة'},
+  empty_anggaran: {id:'Belum ada item anggaran.', en:'No budget items yet.', ar:'لا توجد عناصر ميزانية بعد.'},
+  catatan_title: {id:'Catatan', en:'Notes', ar:'ملاحظات'},
+  label_catatan_baru: {id:'Catatan baru', en:'New note', ar:'ملاحظة جديدة'},
+  btn_tambah_catatan: {id:'+ Tambah Catatan', en:'+ Add Note', ar:'+ إضافة ملاحظة'},
+  empty_catatan: {id:'Tidak ada catatan.', en:'No notes.', ar:'لا توجد ملاحظات.'},
+
+  rundown_title: {id:'Rundown Acara', en:'Event Schedule', ar:'جدول الفعالية'},
+  btn_ubah_label_hari: {id:'Ubah label hari', en:'Edit day labels', ar:'تعديل تسميات الأيام'},
+  label_hari1: {id:'Label Hari 1', en:'Day 1 Label', ar:'تسمية اليوم الأول'},
+  label_hari2: {id:'Label Hari 2', en:'Day 2 Label', ar:'تسمية اليوم الثاني'},
+  ph_hari1: {id:'mis. Minggu, 1 November', en:'e.g. Sunday, Nov 1', ar:'مثال: الأحد، 1 نوفمبر'},
+  ph_hari2: {id:'mis. Senin, 2 November', en:'e.g. Monday, Nov 2', ar:'مثال: الإثنين، 2 نوفمبر'},
+  hari1_prefix: {id:'Hari 1', en:'Day 1', ar:'اليوم الأول'},
+  hari2_prefix: {id:'Hari 2', en:'Day 2', ar:'اليوم الثاني'},
+  label_waktu: {id:'Waktu', en:'Time', ar:'الوقت'},
+  label_kegiatan: {id:'Kegiatan', en:'Activity', ar:'النشاط'},
+  btn_tambah_kegiatan: {id:'+ Tambah Kegiatan', en:'+ Add Activity', ar:'+ إضافة نشاط'},
+  daftar_games_title: {id:'Daftar Games', en:'Games List', ar:'قائمة الألعاب'},
+  btn_tambah_game: {id:'+ Tambah Game', en:'+ Add Game', ar:'+ إضافة لعبة'},
+  label_nama_game: {id:'Nama Game', en:'Game Name', ar:'اسم اللعبة'},
+  empty_games: {id:'Belum ada game tercatat.', en:'No games recorded yet.', ar:'لا توجد ألعاب مسجلة بعد.'},
+  detail_belum_diisi: {id:'Detail belum diisi', en:'Details not filled in yet', ar:'لم تُضف التفاصيل بعد'},
+
+  panitia_title: {id:'Susunan Panitia', en:'Committee', ar:'تشكيل اللجنة'},
+  btn_tambah_peran: {id:'+ Tambah Peran', en:'+ Add Role', ar:'+ إضافة دور'},
+  btn_ubah_info_acara: {id:'Ubah info acara', en:'Edit event info', ar:'تعديل معلومات الفعالية'},
+  label_tema: {id:'Tema', en:'Theme', ar:'الموضوع'},
+  label_tempat: {id:'Tempat', en:'Location', ar:'المكان'},
+  label_jabatan: {id:'Jabatan', en:'Position', ar:'المنصب'},
+  label_peran_singkat: {id:'Peran Singkat', en:'Brief Role', ar:'دور مختصر'},
+  th_jabatan: {id:'Jabatan', en:'Position', ar:'المنصب'},
+  th_peran_singkat: {id:'Peran Singkat', en:'Brief Role', ar:'دور مختصر'},
+  belum_diisi: {id:'belum diisi', en:'not filled in', ar:'لم يُحدد بعد'},
+
+  kritik_title: {id:'Kritik & Saran', en:'Feedback', ar:'الآراء والاقتراحات'},
+  kritik_subtitle: {id:'Boleh diisi siapa saja, nama opsional', en:'Anyone can post, name optional', ar:'يمكن لأي شخص الكتابة، والاسم اختياري'},
+  label_nama_opsional: {id:'Nama (opsional)', en:'Name (optional)', ar:'الاسم (اختياري)'},
+  label_kritik_saran: {id:'Kritik / Saran', en:'Feedback / Suggestion', ar:'ملاحظة / اقتراح'},
+  ph_kritik_saran: {id:'Tulis kritik atau saran Anda di sini...', en:'Write your feedback or suggestion here...', ar:'اكتب ملاحظتك أو اقتراحك هنا...'},
+  btn_kirim: {id:'Kirim', en:'Send', ar:'إرسال'},
+  sending: {id:'Mengirim...', en:'Sending...', ar:'جارٍ الإرسال...'},
+  anonim: {id:'Anonim', en:'Anonymous', ar:'مجهول'},
+  empty_kritik: {id:'Belum ada kritik/saran. Jadilah yang pertama menulis!', en:'No feedback yet. Be the first to write one!', ar:'لا توجد ملاحظات بعد. كن أول من يكتب!'},
+
+  lb_prev: {id:'Sebelumnya', en:'Previous', ar:'السابق'},
+  lb_next: {id:'Berikutnya', en:'Next', ar:'التالي'},
+
+  toast_login_gagal: {id:'Login gagal: {msg}', en:'Login failed: {msg}', ar:'فشل تسجيل الدخول: {msg}'},
+  toast_login_sukses: {id:'Berhasil masuk sebagai admin.', en:'Successfully logged in as admin.', ar:'تم تسجيل الدخول كمسؤول بنجاح.'},
+  toast_export_gagal_lib: {id:'Gagal export: pustaka Excel belum termuat. Cek koneksi internet lalu coba lagi.', en:'Export failed: the Excel library has not loaded. Check your internet connection and try again.', ar:'فشل التصدير: لم يتم تحميل مكتبة إكسل بعد. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'},
+  toast_export_kosong: {id:'Tidak ada transaksi untuk diexport.', en:'No transactions to export.', ar:'لا توجد معاملات للتصدير.'},
+  toast_upload_gagal: {id:'Gagal unggah foto: {msg}', en:'Failed to upload photo: {msg}', ar:'فشل رفع الصورة: {msg}'},
+  toast_simpan_gagal: {id:'Gagal menyimpan: {msg}', en:'Failed to save: {msg}', ar:'فشل الحفظ: {msg}'},
+  toast_pilih_foto: {id:'Pilih foto terlebih dahulu.', en:'Please choose a photo first.', ar:'يرجى اختيار صورة أولاً.'},
+  toast_salin_sukses: {id:'Nomor disalin: {text}', en:'Number copied: {text}', ar:'تم نسخ الرقم: {text}'},
+  toast_salin_gagal: {id:'Gagal menyalin otomatis, salin manual: {text}', en:'Auto-copy failed, please copy manually: {text}', ar:'فشل النسخ التلقائي، يرجى النسخ يدويًا: {text}'},
+  toast_kirim_gagal: {id:'Gagal mengirim: {msg}', en:'Failed to send: {msg}', ar:'فشل الإرسال: {msg}'},
+  toast_kirim_sukses: {id:'Terkirim, terima kasih!', en:'Sent, thank you!', ar:'تم الإرسال، شكرًا لك!'},
+  toast_hapus_gagal: {id:'Gagal menghapus: {msg}', en:'Failed to delete: {msg}', ar:'فشل الحذف: {msg}'},
+  confirm_hapus_kritik: {id:'Hapus kritik/saran ini?', en:'Delete this feedback?', ar:'هل تريد حذف هذه الملاحظة؟'}
+};
+function t(key, vars){
+  const entry = I18N[key];
+  let str = entry ? (entry[ui.lang] || entry.id || key) : key;
+  if(vars){ Object.keys(vars).forEach(k => { str = str.split('{'+k+'}').join(vars[k]); }); }
+  return str;
+}
+const LANG_FLAGS = {
+  id: '<svg viewBox="0 0 24 18" width="24" height="18"><rect width="24" height="9" fill="#E4312B"/><rect y="9" width="24" height="9" fill="#FFFFFF"/></svg>',
+  en: '<svg viewBox="0 0 24 18" width="24" height="18"><rect width="24" height="18" fill="#00247D"/><path d="M0,0 L24,18 M24,0 L0,18" stroke="#FFFFFF" stroke-width="4"/><path d="M0,0 L24,18 M24,0 L0,18" stroke="#CF142B" stroke-width="1.6"/><path d="M12,0 V18 M0,9 H24" stroke="#FFFFFF" stroke-width="6"/><path d="M12,0 V18 M0,9 H24" stroke="#CF142B" stroke-width="3.2"/></svg>',
+  ar: '<svg viewBox="0 0 24 18" width="24" height="18"><rect width="24" height="18" fill="#006C35"/><rect x="3" y="13" width="14" height="1.6" rx="0.8" fill="#FFFFFF"/><path d="M17,13 L19.5,13.8 L17,14.6 Z" fill="#FFFFFF"/></svg>'
+};
+const LANG_NAMES = { id:'Bahasa Indonesia', en:'English', ar:'العربية' };
+function setLang(lang){
+  ui.langMenuOpen = false;
+  if(lang !== ui.lang){
+    ui.lang = lang;
+    try{ localStorage.setItem('jjs_lang', lang); }catch(e){}
+  }
+  render();
+}
+function applyLangAttrs(){
+  document.documentElement.lang = ui.lang;
+  document.documentElement.dir = ui.lang === 'ar' ? 'rtl' : 'ltr';
+}
 
 function toast(msg){
   const t = document.getElementById('toast');
@@ -67,14 +300,8 @@ function toast(msg){
 }
 
 const TABS = [
-  {key:'ringkasan', label:'Ringkasan'},
-  {key:'galeri', label:'Galeri'},
-  {key:'finansial', label:'Finansial'},
-  {key:'lampiran', label:'Lampiran Finansial'},
-  {key:'anggaran', label:'Anggaran Biaya'},
-  {key:'rundown', label:'Rundown Acara'},
-  {key:'panitia', label:'Susunan Panitia'},
-  {key:'kritik', label:'Kritik & Saran'}
+  {key:'ringkasan'}, {key:'galeri'}, {key:'finansial'}, {key:'lampiran'},
+  {key:'anggaran'}, {key:'rundown'}, {key:'panitia'}, {key:'kritik'}
 ];
 
 let feedbackList = [];
@@ -126,7 +353,7 @@ async function boot(){
 let onlineCount = 1;
 function updateOnlineBadge(){
   const el = document.getElementById('online-count');
-  if(el) el.textContent = onlineCount + ' orang online';
+  if(el) el.textContent = onlineCount + ' ' + t('hero_online');
 }
 
 // ---------- persistence ----------
@@ -135,7 +362,7 @@ async function persist(){
   const { error } = await supabase.from('app_state').update({ data: state, updated_at: new Date().toISOString() }).eq('id','main');
   ui.busy = false;
   if(error){
-    toast('Gagal menyimpan: ' + error.message);
+    toast(t('toast_simpan_gagal',{msg:error.message}));
   }
   render();
 }
@@ -178,13 +405,14 @@ function filteredFinansialRows(){
 
 // ---------- render ----------
 function render(){
+  applyLangAttrs();
   const root = document.getElementById('app');
   if(loadError){
-    root.innerHTML = `<div class="wrap"><p class="loading">Gagal memuat: ${esc(loadError)}</p></div>`;
+    root.innerHTML = `<div class="wrap"><p class="loading">${t('loaderror_prefix',{msg:esc(loadError)})}</p></div>`;
     return;
   }
   if(!state){
-    root.innerHTML = `<div class="wrap"><p class="loading">Memuat data...</p></div>`;
+    root.innerHTML = `<div class="wrap"><p class="loading">${t('loading_data')}</p></div>`;
     return;
   }
   const active = document.activeElement;
@@ -194,7 +422,7 @@ function render(){
   root.innerHTML = `
     <div class="wrap">
       ${renderHero()}
-      <nav class="tabs">${TABS.map(t => `<button class="tabbtn ${ui.activeTab===t.key?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('')}</nav>
+      <nav class="tabs">${TABS.map(tab => `<button class="tabbtn ${ui.activeTab===tab.key?'active':''}" data-tab="${tab.key}">${t('tab_'+tab.key)}</button>`).join('')}</nav>
       <main class="tabpanels">
         ${panel('ringkasan', renderRingkasan)}
         ${panel('galeri', renderGaleri)}
@@ -206,7 +434,7 @@ function render(){
         ${panel('kritik', renderKritikSaran)}
       </main>
     </div>
-    <footer class="hint">Jalan-Jalan Saans 2026 &middot; ${session ? 'Mode admin aktif — perubahan tersimpan untuk semua orang.' : 'Mode lihat &mdash; hanya seksi keuangan yang bisa mengubah data.'}</footer>
+    <footer class="hint">Jalan-Jalan Saans 2026 &middot; ${session ? t('footer_admin') : t('footer_view')}</footer>
     ${renderLightbox()}
     <div id="toast" class="toast" hidden></div>
   `;
@@ -229,12 +457,12 @@ function renderLightbox(){
   const cur = ui.lightboxImages[ui.lightboxIndex];
   return `<div class="lightbox" id="lightbox">
     <button class="close" data-close-lightbox>&times;</button>
-    ${total > 1 ? `<button class="lb-nav lb-prev" data-lb-nav="-1" aria-label="Sebelumnya">&lsaquo;</button>` : ''}
+    ${total > 1 ? `<button class="lb-nav lb-prev" data-lb-nav="-1" aria-label="${t('lb_prev')}">&lsaquo;</button>` : ''}
     <figure class="lb-figure">
       <img src="${cur.src}" alt="${esc(cur.alt||'')}">
       ${cur.alt ? `<figcaption>${esc(cur.alt)}</figcaption>` : ''}
     </figure>
-    ${total > 1 ? `<button class="lb-nav lb-next" data-lb-nav="1" aria-label="Berikutnya">&rsaquo;</button>` : ''}
+    ${total > 1 ? `<button class="lb-nav lb-next" data-lb-nav="1" aria-label="${t('lb_next')}">&rsaquo;</button>` : ''}
     ${total > 1 ? `<div class="lb-counter">${ui.lightboxIndex+1} / ${total}</div>` : ''}
   </div>`;
 }
@@ -249,31 +477,42 @@ function renderHero(){
           <div class="chips">
             <span class="chip">${esc(state.susunan.tanggal)}</span>
             <span class="chip">${esc(state.susunan.tempat)}</span>
-            <span class="chip online-chip"><span class="online-dot"></span><span id="online-count">${onlineCount} orang online</span></span>
+            <span class="chip online-chip"><span class="online-dot"></span><span id="online-count">${onlineCount} ${t('hero_online')}</span></span>
           </div>
         </div>
         <div class="adminzone">
+          <div class="lang-switch">
+            <button type="button" class="lang-trigger" data-action="toggle-lang-menu" aria-haspopup="true" aria-expanded="${ui.langMenuOpen}">
+              <span class="lang-flag">${LANG_FLAGS[ui.lang]}</span>
+              <svg class="lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            ${ui.langMenuOpen ? `<div class="lang-menu" role="menu">
+              ${['id','en','ar'].map(l => `<button type="button" class="lang-option ${ui.lang===l?'active':''}" data-lang="${l}" role="menuitem">
+                <span class="lang-flag">${LANG_FLAGS[l]}</span><span class="lang-name">${LANG_NAMES[l]}</span>${ui.lang===l ? '<span class="lang-check">&check;</span>' : ''}
+              </button>`).join('')}
+            </div>` : ''}
+          </div>
           ${session
-            ? `<span class="admin-pill">Mode Admin</span><button class="btn btn-on-dark btn-sm" data-action="logout">Keluar</button>`
-            : `<button class="btn btn-on-dark" data-action="toggle-login">Masuk sebagai Admin</button>
+            ? `<span class="admin-pill">${t('hero_admin_mode')}</span><button class="btn btn-on-dark btn-sm" data-action="logout">${t('hero_logout')}</button>`
+            : `<button class="btn btn-on-dark" data-action="toggle-login">${t('hero_login_cta')}</button>
                ${ui.loginOpen ? `<form class="loginbox on-dark" data-action="login">
-                    <input type="email" name="email" placeholder="Email admin" autocomplete="username" required>
-                    <input type="password" name="password" placeholder="Kata sandi" autocomplete="current-password" required>
-                    <button class="btn btn-primary btn-sm" type="submit">Masuk</button>
+                    <input type="email" name="email" placeholder="${t('hero_email_placeholder')}" autocomplete="username" required>
+                    <input type="password" name="password" placeholder="${t('hero_password_placeholder')}" autocomplete="current-password" required>
+                    <button class="btn btn-primary btn-sm" type="submit">${t('hero_login_submit')}</button>
                   </form>` : ''}`
           }
         </div>
       </div>
       <div class="countdown">
-        <span class="cd-label">Countdown ke Hari-H</span>
+        <span class="cd-label">${t('countdown_label')}</span>
         <div class="cd-tiles" id="cd-tiles-wrap">
-          <div class="cd-tile"><span id="cd-days">00</span><small>Hari</small></div>
+          <div class="cd-tile"><span id="cd-days">00</span><small>${t('countdown_days')}</small></div>
           <div class="cd-sep">:</div>
-          <div class="cd-tile"><span id="cd-hours">00</span><small>Jam</small></div>
+          <div class="cd-tile"><span id="cd-hours">00</span><small>${t('countdown_hours')}</small></div>
           <div class="cd-sep">:</div>
-          <div class="cd-tile"><span id="cd-min">00</span><small>Menit</small></div>
+          <div class="cd-tile"><span id="cd-min">00</span><small>${t('countdown_min')}</small></div>
           <div class="cd-sep">:</div>
-          <div class="cd-tile"><span id="cd-sec">00</span><small>Detik</small></div>
+          <div class="cd-tile"><span id="cd-sec">00</span><small>${t('countdown_sec')}</small></div>
         </div>
       </div>
     </div>
@@ -286,7 +525,7 @@ function updateCountdown(){
   if(!wrap) return;
   const diff = COUNTDOWN_TARGET.getTime() - Date.now();
   if(diff <= 0){
-    wrap.outerHTML = '<span class="cd-done">Hari-H sudah tiba — selamat jalan-jalan! 🏕️</span>';
+    wrap.outerHTML = `<span class="cd-done">${t('countdown_done')}</span>`;
     return;
   }
   const d = Math.floor(diff / 86400000);
@@ -327,12 +566,12 @@ function renderPayCard(){
   const rows = PAYMENT_INFO.rekening.map(r => `<div class="pay-row">
     <span class="pay-bank">${esc(r.bank)}</span>
     <span class="pay-num mono">${esc(r.nomor)}</span>
-    <button type="button" class="btn btn-sm btn-ghost pay-copy" data-copy-text="${esc(r.nomor)}" title="Salin nomor">${ICONS.copy} Salin</button>
+    <button type="button" class="btn btn-sm btn-ghost pay-copy" data-copy-text="${esc(r.nomor)}" title="${t('paycard_copy_title')}">${ICONS.copy} ${t('paycard_copy')}</button>
   </div>`).join('');
   return `<div class="paycard">
-    <h3>Cicilan via Transfer ke DANA</h3>
+    <h3>${t('paycard_title')}</h3>
     <div class="pay-grid">${rows}</div>
-    <p class="pay-name">a.n. <strong>${esc(PAYMENT_INFO.nama)}</strong></p>
+    <p class="pay-name">${t('paycard_an')} <strong>${esc(PAYMENT_INFO.nama)}</strong></p>
   </div>`;
 }
 
@@ -359,48 +598,48 @@ function renderRingkasan(){
   const STATUS_BADGE = { lunas: 'good', kurang: 'warn', belum: 'bad' };
   const pesertaRows = visiblePeserta.map(({ p, status }) => {
     const idx = state.peserta.indexOf(p);
-    const label = status === 'lunas' ? 'Lunas' : (status === 'kurang' ? 'Kurang ' + fmtRp(target - p.dibayar) : 'Belum bayar');
+    const label = status === 'lunas' ? t('status_label_lunas') : (status === 'kurang' ? t('status_label_kurang') + ' ' + fmtRp(target - p.dibayar) : t('status_label_belum'));
     return `<tr>
       <td>${idx+1}</td><td>${esc(p.nama)}</td><td class="num">${fmtRp(p.dibayar)}</td>
       <td><span class="badge ${STATUS_BADGE[status]}">${label}</span></td>
-      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="peserta:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="peserta:${idx}">Hapus</button></td>` : ''}
+      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="peserta:${idx}">${t('common_edit')}</button><button class="btn btn-sm btn-danger" data-del="peserta:${idx}">${t('common_delete')}</button></td>` : ''}
     </tr>`;
   }).join('');
-  const STATUS_LABELS = { semua: 'Semua', belum: 'Belum Bayar', kurang: 'Kurang', lunas: 'Lunas' };
+  const STATUS_LABELS = { semua: t('status_semua'), belum: t('status_belum'), kurang: t('status_kurang'), lunas: t('status_lunas') };
   const statusChips = ['semua','belum','kurang','lunas'].map(key => `<button type="button" class="filter-chip ${statusFilter===key?'active':''}" data-status-filter="${key}">${STATUS_LABELS[key]} (${statusCounts[key]})</button>`).join('');
 
-  return `<div class="section-head"><h2>Ringkasan</h2><span class="muted">Target iuran: ${fmtRp(target)}/orang</span></div>
+  return `<div class="section-head"><h2>${t('ringkasan_title')}</h2><span class="muted">${t('ringkasan_target',{rp:fmtRp(target)})}</span></div>
   <div class="stats stats-3">
-    <div class="stat">${ICONS.wallet}<div class="label">Total Dana Masuk</div><div class="value good">${fmtRp(masuk)}</div></div>
-    <div class="stat">${ICONS.outflow}<div class="label">Total Dana Keluar</div><div class="value bad">${fmtRp(keluar)}</div></div>
-    <div class="stat">${ICONS.scale}<div class="label">Saldo Kas Saat Ini</div><div class="value ${saldoKas>=0?'good':'bad'}">${fmtRp(saldoKas)}</div></div>
-    <div class="stat">${ICONS.target}<div class="label">Kebutuhan Anggaran</div><div class="value">${fmtRp(keb)}</div></div>
-    <div class="stat">${sisa>0?ICONS.trendDown:ICONS.trendUp}<div class="label">${sisa>0?'Masih Kurang':'Surplus'}</div><div class="value ${sisa>0?'bad':'good'}">${fmtRp(Math.abs(sisa))}</div></div>
-    <div class="stat">${ICONS.users}<div class="label">Peserta Terdaftar</div><div class="value">${state.peserta.length} orang</div></div>
+    <div class="stat">${ICONS.wallet}<div class="label">${t('stat_total_masuk')}</div><div class="value good">${fmtRp(masuk)}</div></div>
+    <div class="stat">${ICONS.outflow}<div class="label">${t('stat_total_keluar')}</div><div class="value bad">${fmtRp(keluar)}</div></div>
+    <div class="stat">${ICONS.scale}<div class="label">${t('stat_saldo_kas')}</div><div class="value ${saldoKas>=0?'good':'bad'}">${fmtRp(saldoKas)}</div></div>
+    <div class="stat">${ICONS.target}<div class="label">${t('stat_kebutuhan')}</div><div class="value">${fmtRp(keb)}</div></div>
+    <div class="stat">${sisa>0?ICONS.trendDown:ICONS.trendUp}<div class="label">${sisa>0?t('stat_masih_kurang'):t('stat_surplus')}</div><div class="value ${sisa>0?'bad':'good'}">${fmtRp(Math.abs(sisa))}</div></div>
+    <div class="stat">${ICONS.users}<div class="label">${t('stat_peserta')}</div><div class="value">${state.peserta.length} ${t('orang')}</div></div>
   </div>
   <div class="progress"><i style="width:${pct}%"></i></div>
-  <p class="muted" style="margin-top:6px;">${pct}% dari kebutuhan anggaran sudah terkumpul &middot; saldo kas di atas sudah memperhitungkan dana yang telah dikeluarkan.</p>
+  <p class="muted" style="margin-top:6px;">${t('progress_note',{pct})}</p>
 
   ${renderPayCard()}
 
-  <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Status Iuran Peserta</h2>
-    ${session ? `<button class="btn btn-sm" data-toggle-form="peserta">+ Tambah Peserta</button>` : ''}</div>
+  <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">${t('status_iuran_title')}</h2>
+    ${session ? `<button class="btn btn-sm" data-toggle-form="peserta">${t('btn_tambah_peserta')}</button>` : ''}</div>
   <div class="status-filter">${statusChips}</div>
   <div class="search-box">
-    <input type="search" id="peserta-filter" placeholder="Cari nama peserta..." value="${esc(ui.pesertaFilter || '')}">
-    ${filterText ? `<button type="button" class="btn btn-sm btn-ghost" data-action="clear-peserta-filter">Bersihkan</button>` : ''}
+    <input type="search" id="peserta-filter" placeholder="${t('search_peserta_placeholder')}" value="${esc(ui.pesertaFilter || '')}">
+    ${filterText ? `<button type="button" class="btn btn-sm btn-ghost" data-action="clear-peserta-filter">${t('btn_bersihkan')}</button>` : ''}
   </div>
   ${formHtml('peserta', [
-    {name:'nama', label:'Nama', type:'text', required:true},
-    {name:'dibayar', label:'Sudah Dibayar (Rp)', type:'number', required:true}
+    {name:'nama', label:t('label_nama'), type:'text', required:true},
+    {name:'dibayar', label:t('label_dibayar'), type:'number', required:true}
   ])}
-  ${pesertaRows ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Nama</th><th>Dibayar</th><th>Status</th>${session?'<th></th>':''}</tr></thead><tbody>${pesertaRows}</tbody></table></div>`
-    : (state.peserta.length === 0 ? '<p class="empty">Belum ada peserta.</p>' : '<p class="empty">Tidak ada peserta yang cocok dengan filter ini.</p>')}
+  ${pesertaRows ? `<div class="tablewrap"><table><thead><tr><th>${t('th_no')}</th><th>${t('th_nama')}</th><th>${t('th_dibayar')}</th><th>${t('th_status')}</th>${session?'<th></th>':''}</tr></thead><tbody>${pesertaRows}</tbody></table></div>`
+    : (state.peserta.length === 0 ? `<p class="empty">${t('empty_peserta')}</p>` : `<p class="empty">${t('empty_peserta_filtered')}</p>`)}
 
-  <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Transaksi Terakhir</h2></div>
-  ${recent.length ? `<div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Nominal</th></tr></thead><tbody>${
+  <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">${t('transaksi_terakhir_title')}</h2></div>
+  ${recent.length ? `<div class="tablewrap"><table><thead><tr><th>${t('th_tanggal')}</th><th>${t('th_jenis')}</th><th>${t('th_nominal')}</th></tr></thead><tbody>${
     recent.map(r => `<tr><td>${fmtDate(r.tanggal)}</td><td>${esc(r.jenis)}</td><td class="num">${r.tipe==='keluar'?'-':'+'}${fmtRp(r.jumlah)}</td></tr>`).join('')
-  }</tbody></table></div>` : '<p class="empty">Belum ada transaksi.</p>'}`;
+  }</tbody></table></div>` : `<p class="empty">${t('empty_transaksi')}</p>`}`;
 }
 
 // ---------- Finansial ----------
@@ -428,13 +667,13 @@ function renderGaleri(){
       <div class="meta"><div class="t">${esc(p.caption)}</div></div>
     </div>`;
   }).join('');
-  return `<div class="section-head"><h2>Galeri</h2><span class="muted">Fasilitas Villa Demang Puncak</span></div>
+  return `<div class="section-head"><h2>${t('galeri_title')}</h2><span class="muted">${t('galeri_subtitle')}</span></div>
   <div class="video-feature">
     <video controls playsinline preload="metadata" poster="galley/villa_demang_poster.jpg">
       <source src="galley/villa_demang_video.mp4" type="video/mp4">
-      Browser Anda tidak mendukung pemutaran video.
+      ${t('video_unsupported')}
     </video>
-    <p class="cap">Cuplikan suasana Villa Demang &mdash; kredit @puncakmediabogor</p>
+    <p class="cap">${t('video_caption')}</p>
   </div>
   <div class="gallery">${cards}</div>`;
 }
@@ -457,68 +696,68 @@ function renderFinansial(){
       <td class="num">${r.tipe==='keluar' ? fmtRp(r.jumlah) : '-'}</td>
       <td class="num">${fmtRp(r.saldo)}</td>
       <td>${esc(r.metode||'-')}</td>
-      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="finansial:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="finansial:${idx}">Hapus</button></td>` : ''}
+      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="finansial:${idx}">${t('common_edit')}</button><button class="btn btn-sm btn-danger" data-del="finansial:${idx}">${t('common_delete')}</button></td>` : ''}
     </tr>`;
   }).join('');
 
   const pager = rows.length ? `<div class="pager">
     <div class="pager-size">
-      <label for="finansial-pagesize">Baris/halaman</label>
+      <label for="finansial-pagesize">${t('pager_baris')}</label>
       <select id="finansial-pagesize" data-pagesize="finansial">
         ${PAGE_SIZE_OPTIONS.map(n => `<option value="${n}" ${pageSize===n?'selected':''}>${n}</option>`).join('')}
       </select>
     </div>
     <div class="pager-nav">
-      <button type="button" class="btn btn-sm" data-page="finansial:prev" ${ui.finansialPage<=1?'disabled':''}>&lsaquo; Sebelumnya</button>
-      <span class="pager-info">Halaman ${ui.finansialPage} dari ${totalPages} &middot; ${rows.length} transaksi</span>
-      <button type="button" class="btn btn-sm" data-page="finansial:next" ${ui.finansialPage>=totalPages?'disabled':''}>Berikutnya &rsaquo;</button>
+      <button type="button" class="btn btn-sm" data-page="finansial:prev" ${ui.finansialPage<=1?'disabled':''}>${t('pager_prev')}</button>
+      <span class="pager-info">${t('pager_info',{page:ui.finansialPage,total:totalPages,n:rows.length})}</span>
+      <button type="button" class="btn btn-sm" data-page="finansial:next" ${ui.finansialPage>=totalPages?'disabled':''}>${t('pager_next')}</button>
     </div>
   </div>` : '';
 
-  const TYPE_LABELS = { semua: 'Semua', masuk: 'Uang Masuk', keluar: 'Uang Keluar' };
+  const TYPE_LABELS = { semua: t('status_semua'), masuk: t('opt_uang_masuk'), keluar: t('opt_uang_keluar') };
   const typeChips = ['semua','masuk','keluar'].map(key => `<button type="button" class="filter-chip ${typeFilter===key?'active':''}" data-finansial-type-filter="${key}">${TYPE_LABELS[key]} (${typeCounts[key]})</button>`).join('');
-  const filterSummary = (typeFilter !== 'semua' || searchText) ? `<p class="muted" style="margin:4px 0 12px;">${rows.length} transaksi cocok &middot; total ${fmtRp(filteredTotal)}</p>` : '';
+  const filterSummary = (typeFilter !== 'semua' || searchText) ? `<p class="muted" style="margin:4px 0 12px;">${t('filter_summary',{n:rows.length, rp:fmtRp(filteredTotal)})}</p>` : '';
 
-  return `<div class="section-head"><h2>Finansial</h2>
+  return `<div class="section-head"><h2>${t('finansial_title')}</h2>
     <div class="section-head-actions">
-      <button type="button" class="btn btn-sm" data-action="export-finansial-excel">${ICONS.download} Export Excel</button>
-      ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="finansial">+ Tambah Transaksi</button>` : '<span class="muted">Catatan kapan &amp; bagaimana dana ditransfer</span>'}
+      <button type="button" class="btn btn-sm" data-action="export-finansial-excel">${ICONS.download} ${t('btn_export_excel')}</button>
+      ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="finansial">${t('btn_tambah_transaksi')}</button>` : `<span class="muted">${t('finansial_subtitle')}</span>`}
     </div>
   </div>
   ${formHtml('finansial', [
-    {name:'tanggal', label:'Tanggal', type:'date', required:true},
-    {name:'jenis', label:'Jenis / Keperluan', type:'text', required:true, placeholder:'mis. Cicilan 4 Rara'},
-    {name:'tipe', label:'Tipe', type:'select', options:[['masuk','Uang Masuk'],['keluar','Uang Keluar']], required:true},
-    {name:'jumlah', label:'Nominal (Rp)', type:'number', required:true},
-    {name:'metode', label:'Metode / Keterangan', type:'text', placeholder:'mis. Transfer ke DANA via BCA'}
+    {name:'tanggal', label:t('label_tanggal'), type:'date', required:true},
+    {name:'jenis', label:t('label_jenis_keperluan'), type:'text', required:true, placeholder:t('ph_jenis_keperluan')},
+    {name:'tipe', label:t('label_tipe'), type:'select', options:[['masuk',t('opt_uang_masuk')],['keluar',t('opt_uang_keluar')]], required:true},
+    {name:'jumlah', label:t('label_nominal'), type:'number', required:true},
+    {name:'metode', label:t('label_metode'), type:'text', placeholder:t('ph_metode')}
   ])}
   <div class="status-filter">${typeChips}</div>
   <div class="search-box">
-    <input type="search" id="finansial-filter" placeholder="Cari jenis atau metode/keterangan..." value="${esc(ui.finansialFilter || '')}">
-    ${searchText ? `<button type="button" class="btn btn-sm btn-ghost" data-action="clear-finansial-filter">Bersihkan</button>` : ''}
+    <input type="search" id="finansial-filter" placeholder="${t('search_finansial_placeholder')}" value="${esc(ui.finansialFilter || '')}">
+    ${searchText ? `<button type="button" class="btn btn-sm btn-ghost" data-action="clear-finansial-filter">${t('btn_bersihkan')}</button>` : ''}
   </div>
   ${filterSummary}
-  ${body ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Masuk</th><th>Keluar</th><th>Saldo</th><th>Metode/Ket</th>${session?'<th></th>':''}</tr></thead><tbody>${body}</tbody></table></div>` : (allRows.length === 0 ? '<p class="empty">Belum ada transaksi tercatat.</p>' : '<p class="empty">Tidak ada transaksi yang cocok dengan filter ini.</p>')}
+  ${body ? `<div class="tablewrap"><table><thead><tr><th>${t('th_no')}</th><th>${t('th_tanggal')}</th><th>${t('th_jenis')}</th><th>${t('th_masuk')}</th><th>${t('th_keluar')}</th><th>${t('th_saldo')}</th><th>${t('th_metode_ket')}</th>${session?'<th></th>':''}</tr></thead><tbody>${body}</tbody></table></div>` : (allRows.length === 0 ? `<p class="empty">${t('empty_finansial')}</p>` : `<p class="empty">${t('empty_finansial_filtered')}</p>`)}
   ${pager}`;
 }
 
 function exportFinansialExcel(){
-  if(!window.XLSX){ toast('Gagal export: pustaka Excel belum termuat. Cek koneksi internet lalu coba lagi.'); return; }
+  if(!window.XLSX){ toast(t('toast_export_gagal_lib')); return; }
   const { rows } = filteredFinansialRows();
-  if(!rows.length){ toast('Tidak ada transaksi untuk diexport.'); return; }
+  if(!rows.length){ toast(t('toast_export_kosong')); return; }
   const data = rows.map((r,i) => ({
-    'No': i + 1,
-    'Tanggal': r.tanggal || '',
-    'Jenis': r.jenis || '',
-    'Masuk': r.tipe === 'masuk' ? Number(r.jumlah||0) : '',
-    'Keluar': r.tipe === 'keluar' ? Number(r.jumlah||0) : '',
-    'Saldo': Number(r.saldo||0),
-    'Metode/Ket': r.metode || ''
+    [t('th_no')]: i + 1,
+    [t('th_tanggal')]: r.tanggal || '',
+    [t('th_jenis')]: r.jenis || '',
+    [t('th_masuk')]: r.tipe === 'masuk' ? Number(r.jumlah||0) : '',
+    [t('th_keluar')]: r.tipe === 'keluar' ? Number(r.jumlah||0) : '',
+    [t('th_saldo')]: Number(r.saldo||0),
+    [t('th_metode_ket')]: r.metode || ''
   }));
   const sheet = XLSX.utils.json_to_sheet(data);
   sheet['!cols'] = [{wch:4},{wch:12},{wch:28},{wch:14},{wch:14},{wch:14},{wch:32}];
   const book = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(book, sheet, 'Finansial');
+  XLSX.utils.book_append_sheet(book, sheet, t('finansial_title'));
   const stamp = new Date().toISOString().slice(0,10);
   XLSX.writeFile(book, `Finansial JJS 2026 - ${stamp}.xlsx`);
 }
@@ -529,17 +768,17 @@ function renderLampiran(){
     <img src="${l.url}" data-zoom-src="${l.url}" alt="${esc(l.judul)}">
     <div class="meta"><div class="t">${esc(l.judul)}</div><div class="d">${fmtDate(l.tanggal)}</div>
     ${l.keterangan ? `<div class="k">${esc(l.keterangan)}</div>` : ''}</div>
-    ${session ? `<div class="actions"><button class="btn btn-sm btn-danger" data-del="lampiran:${idx}">Hapus</button></div>` : ''}
+    ${session ? `<div class="actions"><button class="btn btn-sm btn-danger" data-del="lampiran:${idx}">${t('common_delete')}</button></div>` : ''}
   </div>`).join('');
-  return `<div class="section-head"><h2>Lampiran Finansial</h2>
-    ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="lampiran">+ Tambah Lampiran</button>` : '<span class="muted">Bukti transfer &amp; kwitansi</span>'}</div>
+  return `<div class="section-head"><h2>${t('lampiran_title')}</h2>
+    ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="lampiran">${t('btn_tambah_lampiran')}</button>` : `<span class="muted">${t('lampiran_subtitle')}</span>`}</div>
   ${formHtml('lampiran', [
-    {name:'judul', label:'Judul', type:'text', required:true, placeholder:'mis. Kwitansi DP Villa'},
-    {name:'tanggal', label:'Tanggal', type:'date', required:true},
-    {name:'foto', label:'Foto / Scan', type:'file'},
-    {name:'keterangan', label:'Keterangan', type:'textarea'}
+    {name:'judul', label:t('label_judul'), type:'text', required:true, placeholder:t('ph_judul')},
+    {name:'tanggal', label:t('label_tanggal'), type:'date', required:true},
+    {name:'foto', label:t('label_foto'), type:'file'},
+    {name:'keterangan', label:t('label_keterangan'), type:'textarea'}
   ])}
-  ${cards ? `<div class="gallery">${cards}</div>` : '<p class="empty">Belum ada lampiran diunggah.</p>'}`;
+  ${cards ? `<div class="gallery">${cards}</div>` : `<p class="empty">${t('empty_lampiran')}</p>`}`;
 }
 
 // ---------- Anggaran ----------
@@ -547,114 +786,114 @@ function renderAnggaran(){
   const total = anggaranTotal(), masuk = totalMasuk(), sisa = masuk - total;
   const rows = state.anggaran.items.map((it, idx) => {
     const h = Number(it.harga||0), j = Number(it.jumlah||0);
-    const t = h && j ? h*j : 0;
+    const lineTotal = h && j ? h*j : 0;
     return `<tr>
       <td>${idx+1}</td><td>${esc(it.item)}</td>
       <td class="num">${it.harga ? fmtRp(it.harga) : '<span class="muted">TBD</span>'}</td>
       <td class="num">${it.jumlah || '<span class="muted">-</span>'}</td>
-      <td class="num">${t ? fmtRp(t) : '-'}</td>
+      <td class="num">${lineTotal ? fmtRp(lineTotal) : '-'}</td>
       <td>${esc(it.keterangan||'-')}</td>
-      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="anggaran:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="anggaran:${idx}">Hapus</button></td>` : ''}
+      ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="anggaran:${idx}">${t('common_edit')}</button><button class="btn btn-sm btn-danger" data-del="anggaran:${idx}">${t('common_delete')}</button></td>` : ''}
     </tr>`;
   }).join('');
-  const notes = state.anggaran.catatan.map((n, idx) => `<li>${esc(n)}${session ? ` <button class="btn btn-sm btn-ghost" data-edit="catatan:${idx}">ubah</button><button class="btn btn-sm btn-ghost" data-del="catatan:${idx}">hapus</button>` : ''}</li>`).join('');
-  return `<div class="section-head"><h2>Anggaran Biaya</h2>
-    ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="anggaran">+ Tambah Item</button>` : '<span class="muted">Rincian budget pengeluaran</span>'}</div>
+  const notes = state.anggaran.catatan.map((n, idx) => `<li>${esc(n)}${session ? ` <button class="btn btn-sm btn-ghost" data-edit="catatan:${idx}">${t('common_edit')}</button><button class="btn btn-sm btn-ghost" data-del="catatan:${idx}">${t('common_delete')}</button>` : ''}</li>`).join('');
+  return `<div class="section-head"><h2>${t('anggaran_title')}</h2>
+    ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="anggaran">${t('btn_tambah_item')}</button>` : `<span class="muted">${t('anggaran_subtitle')}</span>`}</div>
   <div class="stats stats-3">
-    <div class="stat"><div class="label">Target Iuran / Orang</div><div class="value">${fmtRp(targetPerOrang())}</div>
-      ${session ? `<button class="btn btn-sm btn-ghost" style="margin-top:6px;" data-toggle-form="target">Ubah target</button>` : ''}</div>
-    <div class="stat"><div class="label">Grand Total Anggaran</div><div class="value">${fmtRp(total)}</div></div>
-    <div class="stat"><div class="label">${sisa<0?'Kekurangan Dana':'Sisa Dana'}</div><div class="value ${sisa<0?'bad':'good'}">${fmtRp(Math.abs(sisa))}</div></div>
+    <div class="stat"><div class="label">${t('stat_target_iuran')}</div><div class="value">${fmtRp(targetPerOrang())}</div>
+      ${session ? `<button class="btn btn-sm btn-ghost" style="margin-top:6px;" data-toggle-form="target">${t('btn_ubah_target')}</button>` : ''}</div>
+    <div class="stat"><div class="label">${t('stat_grand_total')}</div><div class="value">${fmtRp(total)}</div></div>
+    <div class="stat"><div class="label">${sisa<0?t('stat_kekurangan'):t('stat_sisa_dana')}</div><div class="value ${sisa<0?'bad':'good'}">${fmtRp(Math.abs(sisa))}</div></div>
   </div>
   ${formHtml('target', [
-    {name:'targetBiaya', label:'Biaya per Orang (Rp)', type:'number', required:true},
-    {name:'targetTambahan', label:'Tambahan Biaya per Orang (Rp)', type:'number'}
+    {name:'targetBiaya', label:t('label_biaya_per_orang'), type:'number', required:true},
+    {name:'targetTambahan', label:t('label_tambahan_biaya'), type:'number'}
   ])}
   ${formHtml('anggaran', [
-    {name:'item', label:'Item', type:'text', required:true},
-    {name:'harga', label:'Harga Satuan (Rp)', type:'number'},
-    {name:'jumlah', label:'Jumlah', type:'number'},
-    {name:'keterangan', label:'Keterangan', type:'text'}
+    {name:'item', label:t('label_item'), type:'text', required:true},
+    {name:'harga', label:t('label_harga_satuan'), type:'number'},
+    {name:'jumlah', label:t('label_jumlah'), type:'number'},
+    {name:'keterangan', label:t('label_keterangan'), type:'text'}
   ])}
-  ${rows ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Item</th><th>Harga</th><th>Jumlah</th><th>Total</th><th>Keterangan</th>${session?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="empty">Belum ada item anggaran.</p>'}
-  <div class="notecard"><h3>Catatan</h3>
-    ${notes ? `<ol>${notes}</ol>` : '<p class="empty">Tidak ada catatan.</p>'}
-    ${session ? formHtml('catatan', [{name:'teks', label:'Catatan baru', type:'text', required:true}]) + `<button class="btn btn-sm" data-toggle-form="catatan">+ Tambah Catatan</button>` : ''}
+  ${rows ? `<div class="tablewrap"><table><thead><tr><th>${t('th_no')}</th><th>${t('th_item')}</th><th>${t('th_harga')}</th><th>${t('th_jumlah')}</th><th>${t('th_total')}</th><th>${t('th_keterangan')}</th>${session?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="empty">${t('empty_anggaran')}</p>`}
+  <div class="notecard"><h3>${t('catatan_title')}</h3>
+    ${notes ? `<ol>${notes}</ol>` : `<p class="empty">${t('empty_catatan')}</p>`}
+    ${session ? formHtml('catatan', [{name:'teks', label:t('label_catatan_baru'), type:'text', required:true}]) + `<button class="btn btn-sm" data-toggle-form="catatan">${t('btn_tambah_catatan')}</button>` : ''}
   </div>`;
 }
 
 // ---------- Rundown ----------
 function renderDayList(day, key){
   return day.map((it, idx) => `<li><span class="t">${esc(it.waktu)}</span><span class="k">${esc(it.kegiatan)}
-    ${session ? ` <button class="btn btn-sm btn-ghost" data-edit="${key}:${idx}">ubah</button><button class="btn btn-sm btn-ghost" data-del="${key}:${idx}">hapus</button>` : ''}
+    ${session ? ` <button class="btn btn-sm btn-ghost" data-edit="${key}:${idx}">${t('common_edit')}</button><button class="btn btn-sm btn-ghost" data-del="${key}:${idx}">${t('common_delete')}</button>` : ''}
   </span></li>`).join('');
 }
 function renderRundown(){
-  const games = state.rundown.games.map((g, idx) => `<tr><td>${idx+1}</td><td>${esc(g.jenis)}</td><td>${esc(g.keterangan||'Detail belum diisi')}</td>
-    ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="games:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="games:${idx}">Hapus</button></td>` : ''}
+  const games = state.rundown.games.map((g, idx) => `<tr><td>${idx+1}</td><td>${esc(g.jenis)}</td><td>${esc(g.keterangan||t('detail_belum_diisi'))}</td>
+    ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="games:${idx}">${t('common_edit')}</button><button class="btn btn-sm btn-danger" data-del="games:${idx}">${t('common_delete')}</button></td>` : ''}
   </tr>`).join('');
-  return `<div class="section-head"><h2>Rundown Acara</h2><span class="muted">${esc(state.susunan.tanggal)}</span></div>
-  ${session ? `<button class="btn btn-sm btn-ghost" data-toggle-form="harilabel">Ubah label hari</button>` : ''}
+  return `<div class="section-head"><h2>${t('rundown_title')}</h2><span class="muted">${esc(state.susunan.tanggal)}</span></div>
+  ${session ? `<button class="btn btn-sm btn-ghost" data-toggle-form="harilabel">${t('btn_ubah_label_hari')}</button>` : ''}
   ${formHtml('harilabel', [
-    {name:'hari1Label', label:'Label Hari 1', type:'text', required:true, placeholder:'mis. Minggu, 1 November'},
-    {name:'hari2Label', label:'Label Hari 2', type:'text', required:true, placeholder:'mis. Senin, 2 November'}
+    {name:'hari1Label', label:t('label_hari1'), type:'text', required:true, placeholder:t('ph_hari1')},
+    {name:'hari2Label', label:t('label_hari2'), type:'text', required:true, placeholder:t('ph_hari2')}
   ])}
   <div class="schedule">
-    <div class="day"><h3>Hari 1 &ndash; ${esc(state.rundown.hari1Label)}</h3>
-      ${session ? formHtml('hari1', [{name:'waktu',label:'Waktu',type:'text',required:true},{name:'kegiatan',label:'Kegiatan',type:'text',required:true}]) : ''}
+    <div class="day"><h3>${t('hari1_prefix')} &ndash; ${esc(state.rundown.hari1Label)}</h3>
+      ${session ? formHtml('hari1', [{name:'waktu',label:t('label_waktu'),type:'text',required:true},{name:'kegiatan',label:t('label_kegiatan'),type:'text',required:true}]) : ''}
       <ul>${renderDayList(state.rundown.hari1,'hari1')}</ul>
-      ${session ? `<button class="btn btn-sm" data-toggle-form="hari1">+ Tambah Kegiatan</button>` : ''}
+      ${session ? `<button class="btn btn-sm" data-toggle-form="hari1">${t('btn_tambah_kegiatan')}</button>` : ''}
     </div>
-    <div class="day"><h3>Hari 2 &ndash; ${esc(state.rundown.hari2Label)}</h3>
-      ${session ? formHtml('hari2', [{name:'waktu',label:'Waktu',type:'text',required:true},{name:'kegiatan',label:'Kegiatan',type:'text',required:true}]) : ''}
+    <div class="day"><h3>${t('hari2_prefix')} &ndash; ${esc(state.rundown.hari2Label)}</h3>
+      ${session ? formHtml('hari2', [{name:'waktu',label:t('label_waktu'),type:'text',required:true},{name:'kegiatan',label:t('label_kegiatan'),type:'text',required:true}]) : ''}
       <ul>${renderDayList(state.rundown.hari2,'hari2')}</ul>
-      ${session ? `<button class="btn btn-sm" data-toggle-form="hari2">+ Tambah Kegiatan</button>` : ''}
+      ${session ? `<button class="btn btn-sm" data-toggle-form="hari2">${t('btn_tambah_kegiatan')}</button>` : ''}
     </div>
   </div>
-  <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">Daftar Games</h2>
-    ${session ? `<button class="btn btn-sm" data-toggle-form="games">+ Tambah Game</button>` : ''}</div>
-  ${formHtml('games', [{name:'jenis',label:'Nama Game',type:'text',required:true},{name:'keterangan',label:'Keterangan',type:'text'}])}
-  ${games ? `<div class="tablewrap"><table><thead><tr><th>No</th><th>Jenis</th><th>Keterangan</th>${session?'<th></th>':''}</tr></thead><tbody>${games}</tbody></table></div>` : '<p class="empty">Belum ada game tercatat.</p>'}`;
+  <div class="section-head" style="margin-top:26px;"><h2 style="font-size:1.05rem;">${t('daftar_games_title')}</h2>
+    ${session ? `<button class="btn btn-sm" data-toggle-form="games">${t('btn_tambah_game')}</button>` : ''}</div>
+  ${formHtml('games', [{name:'jenis',label:t('label_nama_game'),type:'text',required:true},{name:'keterangan',label:t('label_keterangan'),type:'text'}])}
+  ${games ? `<div class="tablewrap"><table><thead><tr><th>${t('th_no')}</th><th>${t('th_jenis')}</th><th>${t('th_keterangan')}</th>${session?'<th></th>':''}</tr></thead><tbody>${games}</tbody></table></div>` : `<p class="empty">${t('empty_games')}</p>`}`;
 }
 
 // ---------- Panitia ----------
 function renderPanitia(){
-  const rows = state.susunan.panitia.map((p, idx) => `<tr><td>${esc(p.jabatan)}</td><td>${p.nama ? esc(p.nama) : '<span class="muted">belum diisi</span>'}</td><td>${esc(p.peran)}</td>
-    ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="panitia:${idx}">Ubah</button><button class="btn btn-sm btn-danger" data-del="panitia:${idx}">Hapus</button></td>` : ''}
+  const rows = state.susunan.panitia.map((p, idx) => `<tr><td>${esc(p.jabatan)}</td><td>${p.nama ? esc(p.nama) : `<span class="muted">${t('belum_diisi')}</span>`}</td><td>${esc(p.peran)}</td>
+    ${session ? `<td class="rowactions"><button class="btn btn-sm" data-edit="panitia:${idx}">${t('common_edit')}</button><button class="btn btn-sm btn-danger" data-del="panitia:${idx}">${t('common_delete')}</button></td>` : ''}
   </tr>`).join('');
-  return `<div class="section-head"><h2>Susunan Panitia</h2>
-    ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="panitia">+ Tambah Peran</button>` : ''}</div>
+  return `<div class="section-head"><h2>${t('panitia_title')}</h2>
+    ${session ? `<button class="btn btn-primary btn-sm" data-toggle-form="panitia">${t('btn_tambah_peran')}</button>` : ''}</div>
   ${session ? formHtml('info', [
-      {name:'tema', label:'Tema', type:'text', required:true},
-      {name:'tanggal', label:'Tanggal', type:'text', required:true},
-      {name:'tempat', label:'Tempat', type:'text', required:true}
-    ]) + `<button class="btn btn-sm" data-toggle-form="info">Ubah info acara</button>` : ''}
+      {name:'tema', label:t('label_tema'), type:'text', required:true},
+      {name:'tanggal', label:t('label_tanggal'), type:'text', required:true},
+      {name:'tempat', label:t('label_tempat'), type:'text', required:true}
+    ]) + `<button class="btn btn-sm" data-toggle-form="info">${t('btn_ubah_info_acara')}</button>` : ''}
   ${formHtml('panitia', [
-    {name:'jabatan', label:'Jabatan', type:'text', required:true},
-    {name:'nama', label:'Nama', type:'text'},
-    {name:'peran', label:'Peran Singkat', type:'text'}
+    {name:'jabatan', label:t('label_jabatan'), type:'text', required:true},
+    {name:'nama', label:t('label_nama'), type:'text'},
+    {name:'peran', label:t('label_peran_singkat'), type:'text'}
   ])}
-  <div class="tablewrap"><table><thead><tr><th>Jabatan</th><th>Nama</th><th>Peran Singkat</th>${session?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  <div class="tablewrap"><table><thead><tr><th>${t('th_jabatan')}</th><th>${t('th_nama')}</th><th>${t('th_peran_singkat')}</th>${session?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 // ---------- Kritik & Saran ----------
 function renderKritikSaran(){
   const items = feedbackList.map(f => `<div class="feedback-item">
     <div class="fb-head">
-      <span class="fb-nama">${esc(f.nama && f.nama.trim() ? f.nama : 'Anonim')}</span>
+      <span class="fb-nama">${esc(f.nama && f.nama.trim() ? f.nama : t('anonim'))}</span>
       <span class="fb-time">${fmtDateTime(f.created_at)}</span>
     </div>
     <p class="fb-pesan">${esc(f.pesan)}</p>
-    ${session ? `<button type="button" class="btn btn-sm btn-danger" data-del-feedback="${f.id}">Hapus</button>` : ''}
+    ${session ? `<button type="button" class="btn btn-sm btn-danger" data-del-feedback="${f.id}">${t('common_delete')}</button>` : ''}
   </div>`).join('');
 
-  return `<div class="section-head"><h2>Kritik &amp; Saran</h2><span class="muted">Boleh diisi siapa saja, nama opsional</span></div>
+  return `<div class="section-head"><h2>${t('kritik_title')}</h2><span class="muted">${t('kritik_subtitle')}</span></div>
   <form class="inlineform" id="feedback-form">
-    <div><label>Nama (opsional)</label><input type="text" id="feedback-nama" name="nama" value="${esc(ui.feedbackDraft.nama)}" placeholder="Nama" maxlength="60"></div>
-    <div class="full"><label>Kritik / Saran</label><textarea id="feedback-pesan" name="pesan" required maxlength="2000" placeholder="Tulis kritik atau saran Anda di sini...">${esc(ui.feedbackDraft.pesan)}</textarea></div>
-    <div class="formbar"><button type="submit" class="btn btn-primary btn-sm">Kirim</button></div>
+    <div><label>${t('label_nama_opsional')}</label><input type="text" id="feedback-nama" name="nama" value="${esc(ui.feedbackDraft.nama)}" placeholder="${t('label_nama')}" maxlength="60"></div>
+    <div class="full"><label>${t('label_kritik_saran')}</label><textarea id="feedback-pesan" name="pesan" required maxlength="2000" placeholder="${t('ph_kritik_saran')}">${esc(ui.feedbackDraft.pesan)}</textarea></div>
+    <div class="formbar"><button type="submit" class="btn btn-primary btn-sm">${t('btn_kirim')}</button></div>
   </form>
-  ${items ? `<div class="feedback-list">${items}</div>` : '<p class="empty">Belum ada kritik/saran. Jadilah yang pertama menulis!</p>'}`;
+  ${items ? `<div class="feedback-list">${items}</div>` : `<p class="empty">${t('empty_kritik')}</p>`}`;
 }
 
 // ---------- generic inline form ----------
@@ -679,8 +918,8 @@ function formHtml(section, fields){
   }).join('');
   return `<form class="inlineform" data-form="${section}">${inputs}
     <div class="formbar">
-      <button type="submit" class="btn btn-primary btn-sm" ${ui.busy?'disabled':''}>${ui.busy ? 'Menyimpan...' : (isEdit?'Simpan Perubahan':'Simpan')}</button>
-      <button type="button" class="btn btn-ghost btn-sm" data-cancel-form="${section}">Batal</button>
+      <button type="submit" class="btn btn-primary btn-sm" ${ui.busy?'disabled':''}>${ui.busy ? t('common_saving') : (isEdit?t('common_save_changes'):t('common_save'))}</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-cancel-form="${section}">${t('common_cancel')}</button>
     </div></form>`;
 }
 function openForm(section, values, editIndex){
@@ -716,7 +955,7 @@ async function uploadPhoto(file){
   const blob = await fileToCompressed(file);
   const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
   const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
-  if(error){ toast('Gagal unggah foto: ' + error.message); return null; }
+  if(error){ toast(t('toast_upload_gagal',{msg:error.message})); return null; }
   const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
@@ -758,7 +997,7 @@ function attachEvents(){
     e.preventDefault();
     const email = e.target.email.value, password = e.target.password.value;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if(error){ toast('Login gagal: ' + error.message); } else { ui.loginOpen = false; toast('Berhasil masuk sebagai admin.'); render(); }
+    if(error){ toast(t('toast_login_gagal',{msg:error.message})); } else { ui.loginOpen = false; toast(t('toast_login_sukses')); render(); }
   });
 
   const logoutBtn = document.querySelector('[data-action="logout"]');
@@ -783,7 +1022,7 @@ function attachEvents(){
   document.querySelectorAll('[data-del]').forEach(btn => {
     btn.addEventListener('click', () => {
       const [section, idxStr] = btn.getAttribute('data-del').split(':');
-      if(!confirm('Hapus data ini?')) return;
+      if(!confirm(t('confirm_hapus_data'))) return;
       commit(s => removeAt(s, section, parseInt(idxStr,10)));
     });
   });
@@ -869,25 +1108,25 @@ function attachEvents(){
     if(!pesan) return;
     const submitBtn = feedbackForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Mengirim...';
+    submitBtn.textContent = t('sending');
     const { data, error } = await supabase.from('feedback').insert({ nama: nama || null, pesan }).select().single();
     if(error){
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Kirim';
-      toast('Gagal mengirim: ' + error.message);
+      submitBtn.textContent = t('btn_kirim');
+      toast(t('toast_kirim_gagal',{msg:error.message}));
       return;
     }
     if(!feedbackList.some(f => f.id === data.id)) feedbackList = [data, ...feedbackList];
     ui.feedbackDraft = { nama: '', pesan: '' };
-    toast('Terkirim, terima kasih!');
+    toast(t('toast_kirim_sukses'));
     render();
   });
   document.querySelectorAll('[data-del-feedback]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if(!confirm('Hapus kritik/saran ini?')) return;
+      if(!confirm(t('confirm_hapus_kritik'))) return;
       const id = btn.getAttribute('data-del-feedback');
       const { error } = await supabase.from('feedback').delete().eq('id', id);
-      if(error){ toast('Gagal menghapus: ' + error.message); return; }
+      if(error){ toast(t('toast_hapus_gagal',{msg:error.message})); return; }
       feedbackList = feedbackList.filter(f => f.id !== id);
       render();
     });
@@ -898,9 +1137,9 @@ function attachEvents(){
       const text = btn.getAttribute('data-copy-text');
       try{
         await navigator.clipboard.writeText(text);
-        toast('Nomor disalin: ' + text);
+        toast(t('toast_salin_sukses',{text}));
       }catch(e){
-        toast('Gagal menyalin otomatis, salin manual: ' + text);
+        toast(t('toast_salin_gagal',{text}));
       }
     });
   });
@@ -944,7 +1183,7 @@ function finalizeSubmit(section, data, editIndex){
       else { data.id = uid(); s.finansial.push(data); }
     } else if(section === 'lampiran'){
       if(editIndex != null){ const old = s.lampiran[editIndex]; Object.assign(old, data); if(!data.url) data.url = old.url; }
-      else { if(!data.url){ toast('Pilih foto terlebih dahulu.'); return; } s.lampiran.push(data); }
+      else { if(!data.url){ toast(t('toast_pilih_foto')); return; } s.lampiran.push(data); }
     } else if(section === 'anggaran'){
       data.harga = data.harga ? Number(data.harga) : null;
       data.jumlah = data.jumlah ? Number(data.jumlah) : null;
@@ -975,6 +1214,14 @@ function finalizeSubmit(section, data, editIndex){
     closeForm(section);
   });
 }
+
+document.addEventListener('click', e => {
+  const toggleBtn = e.target.closest('[data-action="toggle-lang-menu"]');
+  if(toggleBtn){ ui.langMenuOpen = !ui.langMenuOpen; render(); return; }
+  const optionBtn = e.target.closest('[data-lang]');
+  if(optionBtn){ setLang(optionBtn.getAttribute('data-lang')); return; }
+  if(ui.langMenuOpen && !e.target.closest('.lang-switch')){ ui.langMenuOpen = false; render(); }
+});
 
 document.addEventListener('keydown', e => {
   if(!ui.lightboxImages) return;
